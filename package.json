@@ -1,0 +1,56 @@
+{
+  "name": "@keys-i/seer",
+  "version": "0.1.0",
+  "description": "Build-time localization, JSON content, SEO, and AI-search metadata for any website.",
+  "type": "module",
+  "license": "MIT",
+  "author": "keys-i",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keys-i/seer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/keys-i/seer/issues"
+  },
+  "keywords": [
+    "i18n",
+    "localization",
+    "seo",
+    "json",
+    "static-site"
+  ],
+  "engines": {
+    "node": ">=24.18.0"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist/src"
+  ],
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "bin": {
+    "seer": "./dist/src/cli.js"
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "ci": "npm test && npm audit --audit-level=high && npm pack --dry-run --ignore-scripts",
+    "prepublishOnly": "npm test"
+  },
+  "dependencies": {
+    "smol-toml": "1.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.2",
+    "typescript": "5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

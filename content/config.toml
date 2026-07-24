@@ -1,0 +1,13 @@
+version = 1
+default_locale = "en"
+
+[site]
+name = "Seer Example"
+url = "https://example.com"
+
+[output]
+public_dir = "public"
+
+[robots]
+disallow = ["/api/", "/admin/"]
+block_agents = ["GPTBot", "ClaudeBot"]
