@@ -3,30 +3,43 @@
     "pages": {
       "home": {
         "path": "/es/",
-        "title": "Contenido localizado sin maquinaria en ejecución",
-        "description": "Seer compila localización JSON estricta y metadatos de búsqueda antes del despliegue."
-      },
-      "docs": {
-        "path": "/es/documentacion/",
-        "title": "Documentación de Seer",
-        "description": "Configura el contenido una vez, valida cada idioma y usa el JSON generado en cualquier sitio estático o renderizado por servidor."
+        "title": "Seer — SEO y localización en una sola compilación",
+        "description": "Seer valida la estructura del JSON localizado y genera URL canónicas, hreflang, JSON-LD, robots.txt, sitemaps y contenido independiente del framework antes del despliegue."
       }
     }
   },
-  "navigation": {
-    "home": "Inicio",
-    "docs": "Documentación"
-  },
   "home": {
-    "heading": "Contenido legible para personas y buscadores",
-    "summary": "Un archivo compartido, un JSON por idioma y ningún framework de traducción en el cliente."
+    "kicker": "i18n y SEO en tiempo de compilación",
+    "heading": "SEO y localización: de 50 pasos manuales a una sola compilación.",
+    "summary": "Escribe el JSON de cada idioma. Seer valida la estructura de cada archivo y genera el contenido y los archivos de búsqueda que necesita tu sitio estático o renderizado en servidor. No se envía ningún runtime de Seer al navegador.",
+    "claim_note": "La referencia a «50 pasos» representa diez comprobaciones repetidas en cinco idiomas; tu lista variará.",
+    "start_title": "Empieza con dos comandos",
+    "start_copy": "Instala Seer y ejecútalo antes de compilar tu sitio.",
+    "workflow_title": "Una compilación sustituye la lista de tareas",
+    "author_title": "Escribe el JSON localizado",
+    "author_copy": "Guarda los datos compartidos una vez y el texto traducido en un archivo por idioma.",
+    "validate_title": "Valida antes del despliegue",
+    "validate_copy": "Seer falla si faltan claves, hay rutas inseguras, metadatos incorrectos o estructuras inconsistentes entre idiomas.",
+    "ship_title": "Publica páginas fáciles de descubrir",
+    "ship_copy": "Usa el JSON localizado y genera URL canónicas, hreflang, JSON-LD, robots.txt y sitemap.xml.",
+    "api_title": "Usa tu framework, no el nuestro",
+    "api_copy": "Carga el proyecto una vez al compilar o arrancar y pasa los metadatos independientes del framework a la API de cabecera nativa de tu framework.",
+    "proof_title": "Generado aquí, no simulado",
+    "boundary_title": "Honesto por diseño",
+    "boundary_copy": "Seer no traduce textos, no inventa esquemas, no promete posiciones ni añade un runtime de localización al navegador."
   },
   "demo": {
+    "skip_to_content": "Saltar al contenido",
     "primary_navigation": "Navegación principal",
     "language_navigation": "Selección de idioma",
-    "validated_locales": "idiomas validados",
-    "validated_pages": "páginas validadas",
-    "browser_runtime": "localización en el navegador",
+    "documentation": "Documentación",
+    "repository": "GitHub",
+    "registry": "npm",
+    "validated_locales": "archivos de idioma con estructura validada",
+    "browser_runtime": "runtime de localización en el navegador",
+    "generated_locale": "JSON del idioma",
+    "robots": "robots.txt",
+    "sitemap": "sitemap.xml",
     "generated_by": "Generado desde JSON validado por"
   }
 }

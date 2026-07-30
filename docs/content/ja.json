@@ -1,0 +1,45 @@
+{
+  "seo": {
+    "pages": {
+      "home": {
+        "path": "/ja/",
+        "title": "Seer — SEOとローカライズを1回のビルドで",
+        "description": "SeerはロケールJSONの構造を検証し、デプロイ前に正規URL、hreflang、JSON-LD、robots.txt、サイトマップ、フレームワーク非依存のコンテンツを生成します。"
+      }
+    }
+  },
+  "home": {
+    "kicker": "ビルド時のi18n + SEO",
+    "heading": "SEOとローカライズ。50の手順を、1回のビルドに。",
+    "summary": "ロケールごとのJSONを用意します。Seerは各ロケールJSONの構造を検証し、静的サイトやサーバーレンダリングのサイトに必要なコンテンツと検索エンジン向けファイルを生成します。ブラウザにはSeerのランタイムを送りません。",
+    "claim_note": "「50の手順」は、5つのロケールで10項目の確認を繰り返す想定を簡潔に表したものです。実際のチェックリストはプロジェクトによって異なります。",
+    "start_title": "2つのコマンドで始める",
+    "start_copy": "Seerをインストールし、サイトをビルドする前に実行します。",
+    "workflow_title": "手作業のチェックリストを1回のビルドに集約",
+    "author_title": "ロケールJSONを作成",
+    "author_copy": "共通データは1か所にまとめ、翻訳済みの文言はロケールごとに1ファイルで管理します。",
+    "validate_title": "デプロイ前に検証",
+    "validate_copy": "Seerは、キーの欠落、安全でないパス、不正なメタデータ、ロケール間の構造不一致を検出するとエラーで終了します。",
+    "ship_title": "検索エンジンが見つけられるページを公開",
+    "ship_copy": "ロケールJSONを読み込み、正規URL、hreflang、JSON-LD、robots.txt、sitemap.xmlを出力します。",
+    "api_title": "いつものフレームワークをそのまま使う",
+    "api_copy": "ビルド時または起動時にプロジェクトを一度だけ読み込み、フレームワーク非依存のメタデータを利用中のフレームワーク標準のhead APIに渡します。",
+    "proof_title": "モックではなく、ここで生成した成果物",
+    "boundary_title": "できることだけを約束",
+    "boundary_copy": "Seerは文言を翻訳せず、スキーマを勝手に補わず、検索順位を保証せず、ブラウザ向けローカライズランタイムも追加しません。"
+  },
+  "demo": {
+    "skip_to_content": "本文へスキップ",
+    "primary_navigation": "メインナビゲーション",
+    "language_navigation": "言語の選択",
+    "documentation": "ドキュメント",
+    "repository": "GitHub",
+    "registry": "npm",
+    "validated_locales": "構造を検証済みのロケールファイル",
+    "browser_runtime": "ブラウザ向けローカライズランタイム",
+    "generated_locale": "ロケールJSON",
+    "robots": "robots.txt",
+    "sitemap": "sitemap.xml",
+    "generated_by": "生成ツール（検証済みJSONを使用）："
+  }
+}

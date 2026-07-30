@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-Hans" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="theme-color" content="#f4f0e6">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>Seer — 一次构建完成 SEO 与本地化</title>
+    <meta name="description" content="Seer 校验各语言 JSON 的结构，并在部署前生成规范 URL、hreflang、JSON-LD、robots.txt、站点地图和与框架无关的内容。">
+    <link rel="canonical" href="https://keys-i.github.io/seer/zh-hans/">
+    <link rel="alternate" hreflang="en" href="https://keys-i.github.io/seer/">
+    <link rel="alternate" hreflang="es" href="https://keys-i.github.io/seer/es/">
+    <link rel="alternate" hreflang="ja" href="https://keys-i.github.io/seer/ja/">
+    <link rel="alternate" hreflang="ko" href="https://keys-i.github.io/seer/ko/">
+    <link rel="alternate" hreflang="zh-Hans" href="https://keys-i.github.io/seer/zh-hans/">
+    <link rel="alternate" hreflang="x-default" href="https://keys-i.github.io/seer/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Seer">
+    <meta property="og:title" content="Seer — 一次构建完成 SEO 与本地化">
+    <meta property="og:description" content="Seer 校验各语言 JSON 的结构，并在部署前生成规范 URL、hreflang、JSON-LD、robots.txt、站点地图和与框架无关的内容。">
+    <meta property="og:url" content="https://keys-i.github.io/seer/zh-hans/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Seer — 一次构建完成 SEO 与本地化">
+    <meta name="twitter:description" content="Seer 校验各语言 JSON 的结构，并在部署前生成规范 URL、hreflang、JSON-LD、robots.txt、站点地图和与框架无关的内容。">
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://keys-i.github.io/seer/#website","url":"https://keys-i.github.io/seer/","name":"Seer","inLanguage":["en","es","ja","ko","zh-Hans"]},{"@type":"WebPage","@id":"https://keys-i.github.io/seer/zh-hans/#webpage","url":"https://keys-i.github.io/seer/zh-hans/","name":"Seer — 一次构建完成 SEO 与本地化","description":"Seer 校验各语言 JSON 的结构，并在部署前生成规范 URL、hreflang、JSON-LD、robots.txt、站点地图和与框架无关的内容。","inLanguage":"zh-Hans","isPartOf":{"@id":"https://keys-i.github.io/seer/#website"}}]}</script>
+    <link rel="stylesheet" href="https://keys-i.github.io/seer/site.css">
+  </head>
+  <body>
+    <a class="skip" href="#content">跳到主要内容</a>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="https://keys-i.github.io/seer/zh-hans/">Seer</a>
+        <nav aria-label="主导航">
+          <a href="https://github.com/keys-i/seer#readme">文档</a>
+          <a href="https://github.com/keys-i/seer">GitHub</a>
+          <a href="https://www.npmjs.com/package/@keys-i/seer">npm</a>
+        </nav>
+        <details class="languages">
+          <summary>语言选择: <span lang="zh-Hans">中文（简体）</span></summary>
+          <ul><li><a href="https://keys-i.github.io/seer/" lang="en" hreflang="en">English</a></li><li><a href="https://keys-i.github.io/seer/es/" lang="es" hreflang="es">español</a></li><li><a href="https://keys-i.github.io/seer/ja/" lang="ja" hreflang="ja">日本語</a></li><li><a href="https://keys-i.github.io/seer/ko/" lang="ko" hreflang="ko">한국어</a></li><li><a href="https://keys-i.github.io/seer/zh-hans/" lang="zh-Hans" hreflang="zh-Hans" aria-current="page">中文（简体）</a></li></ul>
+        </details>
+      </div>
+    </header>
+    <main id="content">
+      <section class="hero shell" aria-labelledby="hero-title">
+        <div>
+          <p class="eyebrow"><code>@keys-i/seer</code> · 构建时 i18n + SEO</p>
+          <h1 id="hero-title">SEO 与本地化：将 50 个手动步骤缩减为一次构建。</h1>
+          <p class="lead">先编写各语言的 JSON。Seer 随后逐一校验其结构，并生成静态站点或服务端渲染站点所需的内容和搜索引擎文件。浏览器端无需加载任何 Seer 运行时代码。</p>
+          <p class="claim-note">“50 个步骤”只是简化表述，按 5 种语言各重复 10 项检查计算；你的实际检查清单会有所不同。</p>
+        </div>
+        <div class="quickstart" aria-labelledby="start-title">
+          <p class="code-label" id="start-title">只需两条命令即可开始</p>
+          <p>安装 Seer，再在站点构建前运行一次。</p>
+          <pre tabindex="0"><code>npm install --save-dev @keys-i/seer
+npx seer build</code></pre>
+        </div>
+      </section>
+      <section class="section shell" aria-labelledby="workflow-title">
+        <h2 id="workflow-title">一次构建，取代整张检查清单</h2>
+        <ol class="steps">
+          <li><h3>编写各语言 JSON</h3><p>共享数据只保留一份，每种语言的译文各放在一个文件中。</p></li>
+          <li><h3>部署前完成校验</h3><p>如果存在缺失键、不安全路径、格式错误的元数据或各语言之间结构不一致，Seer 会让构建失败。</p></li>
+          <li><h3>发布易于搜索引擎发现的页面</h3><p>读取各语言 JSON，并输出规范 URL、hreflang、JSON-LD、robots.txt 和 sitemap.xml。</p></li>
+        </ol>
+      </section>
+      <section class="section split shell" aria-labelledby="api-title">
+        <div>
+          <h2 id="api-title">继续使用你选择的框架</h2>
+          <p>在构建或启动时只加载一次项目，再将与框架无关的元数据映射到框架原生的 head API。</p>
+        </div>
+        <pre tabindex="0"><code>import { headData, readProject } from &quot;@keys-i/seer&quot;;
+
+const project = await readProject();
+const metadata = headData(project, &quot;zh-Hans&quot;, &quot;home&quot;);</code></pre>
+      </section>
+      <section class="section shell" aria-labelledby="proof-title">
+        <h2 id="proof-title">此处真实生成，并非模拟</h2>
+        <dl class="facts">
+          <div><dt>5</dt><dd>结构已校验的语言文件</dd></div>
+          <div><dt>0 KB</dt><dd>浏览器端本地化运行时</dd></div>
+        </dl>
+        <ul class="outputs">
+          <li><a href="https://keys-i.github.io/seer/content/zh-Hans.json">当前语言 JSON</a></li>
+          <li><a href="https://keys-i.github.io/seer/robots.txt">robots.txt</a></li>
+          <li><a href="https://keys-i.github.io/seer/sitemap.xml">sitemap.xml</a></li>
+        </ul>
+      </section>
+      <aside class="boundary shell" aria-labelledby="boundary-title">
+        <h2 id="boundary-title">能力边界，如实说明</h2>
+        <p>Seer 不会翻译文案或凭空生成 schema，不承诺搜索排名，也不会添加浏览器端本地化运行时。</p>
+      </aside>
+    </main>
+    <footer class="site-footer">
+      <div class="shell">基于经校验的 JSON 生成，使用 <a href="https://github.com/keys-i/seer">Seer</a> · MIT</div>
+    </footer>
+  </body>
+</html>

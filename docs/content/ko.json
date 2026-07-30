@@ -1,0 +1,45 @@
+{
+  "seo": {
+    "pages": {
+      "home": {
+        "path": "/ko/",
+        "title": "Seer — 한 번의 빌드로 끝내는 SEO와 현지화",
+        "description": "Seer는 로케일 JSON의 구조를 검증하고 배포 전에 정규 URL, hreflang, JSON-LD, robots.txt, 사이트맵과 프레임워크 독립적 콘텐츠를 생성합니다."
+      }
+    }
+  },
+  "home": {
+    "kicker": "빌드 시점 i18n + SEO",
+    "heading": "SEO와 현지화, 50단계의 수작업을 한 번의 빌드로.",
+    "summary": "로케일별 JSON을 작성하세요. Seer는 모든 로케일 JSON의 구조를 검증하고 정적 또는 서버 렌더링 사이트에 필요한 콘텐츠와 검색 파일을 생성합니다. 브라우저에는 Seer 런타임이 포함되지 않습니다.",
+    "claim_note": "‘50단계’는 5개 로케일마다 반복되는 10가지 검사를 가정한 요약 표현이며, 실제 체크리스트는 상황에 따라 달라질 수 있습니다.",
+    "start_title": "명령어 두 개로 시작하세요",
+    "start_copy": "Seer를 설치한 다음 사이트를 빌드하기 전에 실행하세요.",
+    "workflow_title": "한 번의 빌드로 체크리스트를 대체하세요",
+    "author_title": "로케일 JSON 작성",
+    "author_copy": "공유 데이터는 한 번만 두고, 번역된 문구는 로케일별 파일 하나에서 관리하세요.",
+    "validate_title": "배포 전 검증",
+    "validate_copy": "Seer는 키 누락, 안전하지 않은 경로, 잘못된 메타데이터 또는 로케일 간 구조 불일치를 발견하면 빌드를 실패 처리합니다.",
+    "ship_title": "검색 엔진이 찾을 수 있는 페이지 배포",
+    "ship_copy": "로케일 JSON을 사용해 정규 URL, hreflang, JSON-LD, robots.txt와 sitemap.xml을 생성하세요.",
+    "api_title": "원하는 프레임워크를 그대로 사용하세요",
+    "api_copy": "빌드 또는 시작 시점에 프로젝트를 한 번 불러온 뒤, 프레임워크 독립적 메타데이터를 해당 프레임워크의 기본 head API에 연결하세요.",
+    "proof_title": "모의 결과가 아닌 실제 생성물",
+    "boundary_title": "과장 없는 설계",
+    "boundary_copy": "Seer는 문구를 번역하거나 스키마를 임의로 만들지 않으며, 검색 순위를 보장하거나 브라우저용 현지화 런타임을 추가하지 않습니다."
+  },
+  "demo": {
+    "skip_to_content": "본문으로 건너뛰기",
+    "primary_navigation": "주 탐색",
+    "language_navigation": "언어 선택",
+    "documentation": "문서",
+    "repository": "GitHub",
+    "registry": "npm",
+    "validated_locales": "구조가 검증된 로케일 파일",
+    "browser_runtime": "브라우저 현지화 런타임",
+    "generated_locale": "로케일 JSON",
+    "robots": "robots.txt",
+    "sitemap": "sitemap.xml",
+    "generated_by": "검증된 JSON을 생성한 도구:"
+  }
+}

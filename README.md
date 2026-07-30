@@ -18,8 +18,6 @@ context, framework adapter, watcher, server, crawler, or rate limiter.
 
 ## Install
 
-After the first npm release:
-
 ```sh
 npm install --save-dev @keys-i/seer
 ```
@@ -43,6 +41,9 @@ content/
   shared.json
   en.json
   es.json
+  ja.json
+  ko.json
+  zh-Hans.json
 ```
 
 `shared.json` owns stable IDs, asset paths, and non-translated data. Locale

@@ -1,0 +1,45 @@
+{
+  "seo": {
+    "pages": {
+      "home": {
+        "path": "/zh-hans/",
+        "title": "Seer — 一次构建完成 SEO 与本地化",
+        "description": "Seer 校验各语言 JSON 的结构，并在部署前生成规范 URL、hreflang、JSON-LD、robots.txt、站点地图和与框架无关的内容。"
+      }
+    }
+  },
+  "home": {
+    "kicker": "构建时 i18n + SEO",
+    "heading": "SEO 与本地化：将 50 个手动步骤缩减为一次构建。",
+    "summary": "先编写各语言的 JSON。Seer 随后逐一校验其结构，并生成静态站点或服务端渲染站点所需的内容和搜索引擎文件。浏览器端无需加载任何 Seer 运行时代码。",
+    "claim_note": "“50 个步骤”只是简化表述，按 5 种语言各重复 10 项检查计算；你的实际检查清单会有所不同。",
+    "start_title": "只需两条命令即可开始",
+    "start_copy": "安装 Seer，再在站点构建前运行一次。",
+    "workflow_title": "一次构建，取代整张检查清单",
+    "author_title": "编写各语言 JSON",
+    "author_copy": "共享数据只保留一份，每种语言的译文各放在一个文件中。",
+    "validate_title": "部署前完成校验",
+    "validate_copy": "如果存在缺失键、不安全路径、格式错误的元数据或各语言之间结构不一致，Seer 会让构建失败。",
+    "ship_title": "发布易于搜索引擎发现的页面",
+    "ship_copy": "读取各语言 JSON，并输出规范 URL、hreflang、JSON-LD、robots.txt 和 sitemap.xml。",
+    "api_title": "继续使用你选择的框架",
+    "api_copy": "在构建或启动时只加载一次项目，再将与框架无关的元数据映射到框架原生的 head API。",
+    "proof_title": "此处真实生成，并非模拟",
+    "boundary_title": "能力边界，如实说明",
+    "boundary_copy": "Seer 不会翻译文案或凭空生成 schema，不承诺搜索排名，也不会添加浏览器端本地化运行时。"
+  },
+  "demo": {
+    "skip_to_content": "跳到主要内容",
+    "primary_navigation": "主导航",
+    "language_navigation": "语言选择",
+    "documentation": "文档",
+    "repository": "GitHub",
+    "registry": "npm",
+    "validated_locales": "结构已校验的语言文件",
+    "browser_runtime": "浏览器端本地化运行时",
+    "generated_locale": "当前语言 JSON",
+    "robots": "robots.txt",
+    "sitemap": "sitemap.xml",
+    "generated_by": "基于经校验的 JSON 生成，使用"
+  }
+}

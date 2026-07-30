@@ -5,6 +5,7 @@ import {
   cp,
   mkdtemp,
   readFile,
+  readdir,
   rename,
   rm,
   symlink,
@@ -60,7 +61,10 @@ async function editLocales(
   root: string,
   change: (value: Record<string, any>, locale: string) => void,
 ) {
-  await Promise.all(["en", "es"].map((locale) =>
+  const locales = (await readdir(resolve(root, "content")))
+    .filter((name) => name.endsWith(".json") && name !== "shared.json")
+    .map((name) => name.slice(0, -5));
+  await Promise.all(locales.map((locale) =>
     editJson(root, locale, (value) => change(value, locale)),
   ));
 }
@@ -96,16 +100,19 @@ function project(
 test("loads independent locales and generates safe metadata", async (context) => {
   const root = await fixture(context);
   const nestedText = `${"[{".repeat(66)}\\\"${"}]".repeat(66)}`;
+  await editJson(root, "shared", (content) => {
+    content.fixture = { name: "Seer" };
+  });
   await editLocales(root, (content) => { content.home.summary = nestedText; });
   const loaded = await readProject({ dir: resolve(root, "content") });
   const data = headData(loaded, "es", "home");
   const robots = robotsTxt(loaded);
 
-  assert.equal((loaded.content.es?.brand as JsonObject).name, "Seer");
+  assert.equal((loaded.content.es?.fixture as JsonObject).name, "Seer");
   assert.equal((loaded.content.en?.home as JsonObject).summary, nestedText);
-  assert.notEqual(loaded.content.en?.brand, loaded.content.es?.brand);
-  (loaded.content.en?.brand as JsonObject).name = "Changed";
-  assert.equal((loaded.content.es?.brand as JsonObject).name, "Seer");
+  assert.notEqual(loaded.content.en?.fixture, loaded.content.es?.fixture);
+  (loaded.content.en?.fixture as JsonObject).name = "Changed";
+  assert.equal((loaded.content.es?.fixture as JsonObject).name, "Seer");
   assert.equal(data.alternates["x-default"], "https://keys-i.github.io/seer/");
   assert.equal(data.canonical, "https://keys-i.github.io/seer/es/");
   assert.equal(data.dir, "ltr");
@@ -142,20 +149,19 @@ test("supports an HTTPS base path", async (context) => {
 
 test("keeps scheme-like page and image paths inside the site base", async (context) => {
   const root = await fixture(context);
-  const paths = [
-    "/https://evil.test/pwn",
-    "/http://evil.test/pwn",
-    "/javascript:alert(1)",
-    "/data:text/html,pwn",
-  ];
+  const paths: Record<string, string> = {
+    en: "/https://evil.test/pwn",
+    es: "/es/http://evil.test/pwn",
+    ja: "/ja/javascript:alert(1)",
+    ko: "/ko/data:text/html,pwn",
+    "zh-Hans": "/zh-hans/file://evil.test/pwn",
+  };
   await editConfig(root, (source) =>
     source.replace("https://keys-i.github.io/seer/", "https://example.com/base/"),
   );
   await editLocales(root, (content, locale) => {
     const pages = content.seo.pages;
-    const offset = locale === "en" ? 0 : 2;
-    pages.home.path = paths[offset];
-    pages.docs.path = paths[offset + 1];
+    pages.home.path = paths[locale];
     pages.home.image = "/javascript:alert(1)";
     pages.home.image_alt = "Safe base-relative image";
   });
@@ -178,20 +184,23 @@ test("keeps scheme-like page and image paths inside the site base", async (conte
 test("awaits validation without cross-locale mutation", async (context) => {
   const root = await fixture(context);
   const calls: string[] = [];
+  await editJson(root, "shared", (content) => {
+    content.fixture = { name: "Seer" };
+  });
   const loaded = await readProject({
     dir: resolve(root, "content"),
     async validate(content, locale) {
       await Promise.resolve();
       calls.push(locale);
-      const brand = content.brand as JsonObject;
-      if (locale === "en") brand.name = "Validated";
-      else assert.equal(brand.name, "Seer");
+      const fixtureInfo = content.fixture as JsonObject;
+      if (locale === "en") fixtureInfo.name = "Validated";
+      else assert.equal(fixtureInfo.name, "Seer");
     },
   });
 
-  assert.deepEqual(calls, ["en", "es"]);
-  assert.equal((loaded.content.en?.brand as JsonObject).name, "Validated");
-  assert.equal((loaded.content.es?.brand as JsonObject).name, "Seer");
+  assert.deepEqual(calls, loaded.locales);
+  assert.equal((loaded.content.en?.fixture as JsonObject).name, "Validated");
+  assert.equal((loaded.content.es?.fixture as JsonObject).name, "Seer");
   await assert.rejects(
     readProject({
       dir: resolve(root, "content"),
@@ -231,7 +240,7 @@ test("rejects invalid configuration with table-driven checks", async (context) =
           `${field} = ${value}`,
           "",
           "[site]",
-          'name = "Seer Example"',
+          'name = "Seer"',
           'url = "https://keys-i.github.io/seer/"',
           "",
         ].join("\n"),
@@ -252,7 +261,7 @@ test("rejects invalid configuration with table-driven checks", async (context) =
     {
       name: "blank site name",
       change: (source: string) =>
-        source.replace('name = "Seer Example"', 'name = " "'),
+        source.replace('name = "Seer"', 'name = " "'),
       error: /site\.name must be a non-empty string/,
     },
     {
@@ -534,7 +543,7 @@ test("rejects malformed content schemas", async (context) => {
     {
       name: "duplicate path within locale",
       prepare: (root) => editLocales(root, (content) => {
-        content.seo.pages.docs.path = content.seo.pages.home.path;
+        content.seo.pages.docs = { ...content.seo.pages.home };
       }),
       error: /duplicate canonical URL/,
     },
@@ -583,10 +592,9 @@ test("rejects locale discovery edge cases", async (context) => {
 
   await context.test("no locale files", async (nested) => {
     const root = await fixture(nested);
-    await Promise.all([
-      rm(resolve(root, "content/en.json")),
-      rm(resolve(root, "content/es.json")),
-    ]);
+    const files = (await readdir(resolve(root, "content")))
+      .filter((name) => name.endsWith(".json") && name !== "shared.json");
+    await Promise.all(files.map((name) => rm(resolve(root, "content", name))));
     await assert.rejects(
       readProject({ dir: resolve(root, "content") }),
       /at least one locale/,
@@ -630,7 +638,7 @@ test("validates post-callback page shape", async (context) => {
       dir: resolve(root, "content"),
       validate(content, locale) {
         if (locale === "es") {
-          delete ((content.seo as JsonObject).pages as JsonObject).docs;
+          delete ((content.seo as JsonObject).pages as JsonObject).home;
         }
       },
     }),
@@ -906,7 +914,7 @@ test("rejects validator corruption", async (context) => {
     assert.notEqual(loaded.content.en, retained);
     assert.equal(
       (loaded.content.en!.home as JsonObject).heading,
-      "Content humans and search engines can read",
+      "SEO and localisation—from 50 manual steps to one build.",
     );
   });
 
@@ -916,7 +924,7 @@ test("rejects validator corruption", async (context) => {
       readProject({
         dir: resolve(root, "content"),
         validate(content, locale) {
-          if (locale === "es") delete content.navigation;
+          if (locale === "es") delete content.demo;
         },
       }),
       /es\.json differs at \$/,
@@ -926,12 +934,15 @@ test("rejects validator corruption", async (context) => {
 
 test("merges overlapping shared primitives without aliasing", async (context) => {
   const root = await fixture(context);
+  await editJson(root, "shared", (content) => {
+    content.fixture = { name: "shared", stable: true };
+  });
   await editLocales(root, (content, locale) => {
-    content.brand = { name: locale };
+    content.fixture = { name: locale };
   });
   const loaded = await readProject({ dir: resolve(root, "content") });
-  assert.equal((loaded.content.en?.brand as JsonObject).name, "en");
-  assert.equal((loaded.content.es?.brand as JsonObject).name, "es");
+  assert.deepEqual(loaded.content.en?.fixture, { name: "en", stable: true });
+  assert.deepEqual(loaded.content.es?.fixture, { name: "es", stable: true });
 });
 
 test("rejects corrupt or lossy JSON values", async (context) => {
@@ -1064,7 +1075,7 @@ test("rejects inconsistent locale content", async (context) => {
     {
       name: "different noindex policy",
       change: (content) => { content.seo.pages.home.noindex = true; },
-      prepare: (root) => editJson(root, "en", (content) => {
+      prepare: (root) => editLocales(root, (content) => {
         content.seo.pages.home.noindex = false;
       }),
       error: /noindex must match across locales/,
@@ -1077,7 +1088,7 @@ test("rejects inconsistent locale content", async (context) => {
     {
       name: "image without alt",
       change: (content) => { content.seo.pages.home.image = "/og.png"; },
-      prepare: (root) => editJson(root, "en", (content) => {
+      prepare: (root) => editLocales(root, (content) => {
         content.seo.pages.home.image = "/og.png";
       }),
       error: /image and image_alt must be set together/,
@@ -1452,7 +1463,10 @@ test("CLI checks, builds, and replaces only generated content", async (context) 
   const content = JSON.parse(
     await readFile(resolve(root, ".seer/content/en.json"), "utf8"),
   );
-  assert.equal(content.home.heading, "Content humans and search engines can read");
+  assert.equal(
+    content.home.heading,
+    "SEO and localisation—from 50 manual steps to one build.",
+  );
   assert.match(
     await readFile(resolve(root, "public/robots.txt"), "utf8"),
     /Sitemap: https:\/\/keys-i\.github\.io\/seer\/sitemap\.xml/,
