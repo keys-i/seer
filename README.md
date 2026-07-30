@@ -174,9 +174,37 @@ or write permission. Outputs are `locales` (JSON), `locale-count`, and
 `default-locale`. The summary reports schema, key, type, array-shape, page-ID,
 and indexability parity. It does not score fluency or translation accuracy.
 
-The complete consumer workflow will be pinned here after this action reaches
-the default branch, so its immutable commit can be used instead of a mutable
-tag. Marketplace publication also has a GitHub owner UI gate; [issue #19](https://github.com/keys-i/seer/issues/19)
+Use the immutable commit instead of a mutable tag:
+
+```yaml
+name: Locale
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: locale
+        uses: keys-i/seer@fe739a3fb3df7f83fcd95b663399cbce5896bf28
+        with:
+          directory: content
+      - name: Confirm locale count
+        env:
+          LOCALE_COUNT: ${{ steps.locale.outputs.locale-count }}
+        run: test "$LOCALE_COUNT" -gt 0
+```
+
+Marketplace publication also has a GitHub owner UI gate; [issue #19](https://github.com/keys-i/seer/issues/19)
 stays open until the live listing and an external pinned run are verified.
 
 ## SEO and AI search
