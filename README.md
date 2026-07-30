@@ -166,6 +166,19 @@ const project = await readProject({
 });
 ```
 
+## GitHub Action
+
+The root action runs the same structural validation and writes a job summary
+beginning with `## Locale`. It needs no token, network access, runtime install,
+or write permission. Outputs are `locales` (JSON), `locale-count`, and
+`default-locale`. The summary reports schema, key, type, array-shape, page-ID,
+and indexability parity. It does not score fluency or translation accuracy.
+
+The complete consumer workflow will be pinned here after this action reaches
+the default branch, so its immutable commit can be used instead of a mutable
+tag. Marketplace publication also has a GitHub owner UI gate; [issue #19](https://github.com/keys-i/seer/issues/19)
+stays open until the live listing and an external pinned run are verified.
+
 ## SEO and AI search
 
 There is no secret AEO markup. Search and AI-search systems reward the same
