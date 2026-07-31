@@ -31,7 +31,7 @@ npm install --save-dev @keys-i/seer
 }
 ```
 
-Seer requires Node 24.18 or newer.
+Seer is ESM-only and requires Node 24.18 or newer.
 
 ## Files
 
@@ -58,7 +58,7 @@ default_locale = "en"
 
 [site]
 name = "Example"
-url = "https://example.com"
+url = "https://example.com/"
 
 [output]
 public_dir = "public"
@@ -69,8 +69,10 @@ block_agents = ["GPTBot", "ClaudeBot"]
 ```
 
 Unknown config keys fail. Output directories cannot escape, overlap the source,
-overlap each other, or traverse existing symlinks. The site URL must be a bare
-HTTPS origin.
+overlap each other, or traverse existing symlinks. The site URL must be an HTTPS
+base URL; a path base must end in `/`, such as
+`https://example.github.io/project/`. Page paths resolve inside that base.
+Images accept relative or absolute HTTPS URLs.
 
 Seer cannot prove how a framework renders by reading a config claim. The host
 must put primary content and head metadata in the initial static or SSR HTML;
@@ -196,6 +198,10 @@ References:
 spoofable. Neither Seer nor any build-time TypeScript package can stop
 scraping, abusive agents, or DDoS traffic.
 
+Serve the generated file at the origin's `/robots.txt`; a file below a project
+path is only a demo artifact because the protocol defines the origin-root
+location.
+
 Production must enforce this at the edge:
 
 1. Put the origin behind a CDN with managed DDoS protection and caching.
@@ -218,14 +224,19 @@ describes the enforcement layer Seer deliberately does not fake.
 
 - maximum JSON file size: 5 MiB;
 - maximum aggregate JSON size: 25 MiB and 256 locales;
-- maximum generated locale JSON: 50 MiB;
+- maximum aggregate generated locale JSON: 50 MiB;
 - maximum TOML size: 256 KiB;
 - maximum JSON depth: 64;
+- input must be valid UTF-8 and contain well-formed Unicode;
+- non-finite numbers and integers outside JavaScript's safe range rejected;
 - prototype-pollution keys rejected;
 - page-ID and indexability parity required across locales;
-- sitemap protocol limit: 50,000 URLs;
+- sitemap limits: 50,000 URLs, less than 2,048 characters per URL, and 50 MiB;
+- generated `robots.txt` capped at the 500 KiB interoperability floor;
 - canonical paths, crawler tokens, URLs, config keys, and output paths
-  validated; input files and existing output directories cannot be symlinks;
+  validated; output paths are capped at 32 portable components and 512 bytes;
+  the final content directory entry and input files cannot be symlinks, and
+  existing output components cannot be symlinks or filesystem aliases;
 - XML escaped and JSON-LD serialization protected against script termination;
 - no network access, remote includes, templates, `eval`, or per-request file
   reads.

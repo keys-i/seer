@@ -3,7 +3,7 @@ default_locale = "en"
 
 [site]
 name = "Seer Example"
-url = "https://example.com"
+url = "https://keys-i.github.io/seer/"
 
 [output]
 public_dir = "public"

@@ -4,14 +4,12 @@
       "home": {
         "path": "/",
         "title": "Localized content without runtime machinery",
-        "description": "Seer compiles strict JSON localization and search metadata before deployment.",
-        "image_alt": "Seer Example"
+        "description": "Seer compiles strict JSON localization and search metadata before deployment."
       },
       "docs": {
         "path": "/docs/",
         "title": "Seer documentation",
-        "description": "Configure content once, validate every locale, and consume generated JSON in any static or server-rendered website.",
-        "image_alt": "Seer documentation"
+        "description": "Configure content once, validate every locale, and consume generated JSON in any static or server-rendered website."
       }
     }
   },

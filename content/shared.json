@@ -1,15 +1,5 @@
 {
   "brand": {
-    "logo": "/logo.svg"
-  },
-  "seo": {
-    "pages": {
-      "home": {
-        "image": "/og.png"
-      },
-      "docs": {
-        "image": "/og.png"
-      }
-    }
+    "name": "Seer"
   }
 }

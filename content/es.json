@@ -4,14 +4,12 @@
       "home": {
         "path": "/es/",
         "title": "Contenido localizado sin maquinaria en ejecución",
-        "description": "Seer compila localización JSON estricta y metadatos de búsqueda antes del despliegue.",
-        "image_alt": "Ejemplo de Seer"
+        "description": "Seer compila localización JSON estricta y metadatos de búsqueda antes del despliegue."
       },
       "docs": {
         "path": "/es/documentacion/",
         "title": "Documentación de Seer",
-        "description": "Configura el contenido una vez, valida cada idioma y usa el JSON generado en cualquier sitio estático o renderizado por servidor.",
-        "image_alt": "Documentación de Seer"
+        "description": "Configura el contenido una vez, valida cada idioma y usa el JSON generado en cualquier sitio estático o renderizado por servidor."
       }
     }
   },
