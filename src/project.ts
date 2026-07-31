@@ -474,9 +474,8 @@ async function textFile(path: string, limit: number) {
   if (!status.isFile()) {
     fail(`${path} must be a regular file`);
   }
-  if ((await realpath(path)).normalize("NFC") !== path.normalize("NFC")) {
+  if ((await realpath(path)).normalize("NFC") !== path.normalize("NFC"))
     fail(`${path} must use its canonical filename`);
-  }
   if (status.size > limit) fail(`${path} exceeds its byte limit`);
   const data = await readFile(path);
   const bytes = data.byteLength;
