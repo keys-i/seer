@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/keys-i/seer/compare/v1.0.0...v1.1.0) (2026-08-01)
+
+
+### Features
+
+* add the locale report action ([#22](https://github.com/keys-i/seer/issues/22)) ([fe739a3](https://github.com/keys-i/seer/commit/fe739a3fb3df7f83fcd95b663399cbce5896bf28))
+* rebuild the localized demo ([#20](https://github.com/keys-i/seer/issues/20)) ([827184a](https://github.com/keys-i/seer/commit/827184a07c1d77888d985be53667bc743f720734))
+
 ## 1.0.0 (2026-08-01)
 
 
