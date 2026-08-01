@@ -145,7 +145,7 @@ function stringList(
   return result as string[];
 }
 
-function safeDirectory(value: string, path: string) {
+export function safeDirectory(value: string, path: string) {
   const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
   const parts = normalized.split("/");
   if (
