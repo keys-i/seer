@@ -336,6 +336,8 @@ test("rejects invalid configuration with table-driven checks", async (context) =
       error: /must be a subdirectory/,
     })),
     ...([
+      ["Git metadata output", "assets/.GIT/refs/heads"],
+      ["NTFS Git metadata alias", "assets/GIT~1/refs/heads"],
       ["oversized output component", "a".repeat(256)],
       ["excessive output depth", Array(33).fill("a").join("/")],
     ] as const).map(([name, output]) => ({

@@ -9,7 +9,6 @@ export function pageDirectory(output, pagePath, resolvePath = resolve) {
   const directory = pagePath.slice(1, -1);
   if (
     directory.includes("%") ||
-    directory.split("/").some((part) => /^(?:\.git|git~1)$/i.test(part)) ||
     safeDirectory(directory, "demo page path") !== directory ||
     directory.normalize("NFC") !== directory
   ) {
