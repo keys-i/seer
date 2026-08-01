@@ -14,7 +14,7 @@ const cache = process.env.SEER_NPM_CACHE ?? resolve(tmpdir(), "seer-package-cach
 if (!npm) throw new Error("npm_execpath is required");
 
 try {
-  const { stdout } = await exec(
+  const { stdout, stderr } = await exec(
     process.execPath,
     [
       npm,
@@ -28,6 +28,7 @@ try {
     ],
     { cwd: repository },
   );
+  assert.doesNotMatch(stderr, /auto-corrected/);
   const packed = JSON.parse(stdout);
   const { filename } = Array.isArray(packed)
     ? packed[0]
