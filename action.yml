@@ -1,0 +1,25 @@
+name: Seer Locale Report
+description: Validate Seer locale structure and summarize every discovered language.
+author: keys-i
+
+inputs:
+  directory:
+    description: Repository-relative directory containing Seer content.
+    required: false
+    default: content
+
+outputs:
+  locales:
+    description: JSON array of validated canonical locale identifiers.
+  locale-count:
+    description: Number of validated locales.
+  default-locale:
+    description: Configured default locale.
+
+runs:
+  using: node24
+  main: actions/locale.mjs
+
+branding:
+  icon: globe
+  color: green
