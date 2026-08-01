@@ -159,6 +159,7 @@ export function safeDirectory(value: string, path: string) {
         Buffer.byteLength(part) > 255 ||
         part === "." ||
         part === ".." ||
+        /^(?:\.git|git~1)$/i.test(part) ||
         CONTROL_OR_FORMAT.test(part) ||
         /[<>:"|?*]|^ |[ .]$/.test(part) ||
         WINDOWS_DEVICE_NAME.test(part),
