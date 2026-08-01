@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 import {
-  lstat,
   mkdir,
-  readdir,
+  lstat,
+  opendir,
+  realpath,
   rename,
   rm,
   writeFile,
 } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 import { readProject, type Project } from "./project.js";
 import { robotsTxt, sitemapXml } from "./seo.js";
@@ -18,14 +19,39 @@ function outside(root: string, path: string) {
   return isAbsolute(value) || value === ".." || value.startsWith(`..${sep}`);
 }
 
+const portableName = (value: string) => value.normalize("NFC").toLowerCase();
+
+async function rejectAliases(target: string, names: string[]) {
+  const expected = new Map(names.map((name) => [portableName(name), name]));
+  for await (const entry of await opendir(target)) {
+    const canonical = expected.get(portableName(entry.name));
+    if (!canonical) continue;
+    if (!entry.isFile()) {
+      throw new Error(`generated output is not a regular file: ${entry.name}`);
+    }
+    if (entry.name !== canonical) {
+      throw new Error(`generated output filename is not canonical: ${entry.name}`);
+    }
+  }
+}
+
 async function safeMkdir(root: string, target: string) {
   if (outside(root, target)) throw new Error("output escaped the project");
   let current = root;
   for (const part of relative(root, target).split(sep).filter(Boolean)) {
     current = resolve(current, part);
+    for await (const entry of await opendir(dirname(current))) {
+      if (portableName(entry.name) === portableName(part) && entry.name !== part) {
+        throw new Error(`output path is not canonical: ${current}`);
+      }
+    }
     try {
       const status = await lstat(current);
-      if (!status.isDirectory() || status.isSymbolicLink()) {
+      const canonical = await realpath(current);
+      if (canonical.normalize("NFC") !== current.normalize("NFC")) {
+        throw new Error(`output path is not canonical: ${current}`);
+      }
+      if (!status.isDirectory()) {
         throw new Error(`output path is not a real directory: ${current}`);
       }
     } catch (error) {
@@ -36,7 +62,7 @@ async function safeMkdir(root: string, target: string) {
 }
 
 async function atomicWrite(path: string, value: string) {
-  const temporary = `${path}.${randomUUID()}.tmp`;
+  const temporary = resolve(dirname(path), `.${randomUUID()}.tmp`);
   try {
     await writeFile(temporary, value, {
       encoding: "utf8",
@@ -51,13 +77,8 @@ async function atomicWrite(path: string, value: string) {
 
 function compile(project: Project) {
   const content: Array<readonly [string, string]> = [];
-  let bytes = 0;
   for (const locale of project.locales) {
-    const value = `${JSON.stringify(project.content[locale], null, 2)}\n`;
-    bytes += Buffer.byteLength(value);
-    if (bytes > 50 * 1024 * 1024) {
-      throw new Error("generated content exceeds the 50 MiB limit");
-    }
+    const value = `${JSON.stringify(project.content[locale])}\n`;
     content.push([`${locale}.json`, value]);
   }
   return { content, robots: robotsTxt(project), sitemap: sitemapXml(project) };
@@ -67,17 +88,23 @@ async function writeContent(
   files: Array<readonly [string, string]>,
   target: string,
 ) {
-  const expected = new Set<string>(files.map(([name]) => name));
-  for (const entry of await readdir(target, { withFileTypes: true })) {
-    if (entry.name.endsWith(".json") && entry.isSymbolicLink()) {
-      throw new Error(`generated content contains a symlink: ${entry.name}`);
-    }
-    if (entry.isFile() && entry.name.endsWith(".json") && !expected.has(entry.name)) {
-      await rm(resolve(target, entry.name));
+  const names = files.map(([name]) => name);
+  const expected = new Set(names.map(portableName));
+  for await (const entry of await opendir(target)) {
+    if (!portableName(entry.name).endsWith(".json")) continue;
+    if (!entry.isFile()) {
+      throw new Error(`generated content contains a non-file: ${entry.name}`);
     }
   }
+  await rejectAliases(target, names);
   for (const [name, content] of files) {
     await atomicWrite(resolve(target, name), content);
+  }
+  for await (const entry of await opendir(target)) {
+    const name = portableName(entry.name);
+    if (name.endsWith(".json") && !expected.has(name)) {
+      await rm(resolve(target, entry.name));
+    }
   }
 }
 
@@ -89,6 +116,7 @@ async function build(
   const publicDir = resolve(project.root, project.config.output.publicDir);
   await safeMkdir(project.root, dataDir);
   await safeMkdir(project.root, publicDir);
+  await rejectAliases(publicDir, ["robots.txt", "sitemap.xml"]);
   await writeContent(output.content, dataDir);
   await atomicWrite(resolve(publicDir, "robots.txt"), output.robots);
   await atomicWrite(resolve(publicDir, "sitemap.xml"), output.sitemap);
@@ -118,6 +146,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  console.error(`seer: ${error instanceof Error ? error.message : error}`);
+  const message = String(error instanceof Error ? error.message : error)
+    .replace(/[\p{Cc}\p{Cf}]/gu, " ");
+  console.error(`seer: ${message}`);
   process.exitCode = 1;
 });

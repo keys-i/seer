@@ -1,6 +1,7 @@
-import { lstat, readdir, readFile, realpath } from "node:fs/promises";
+import { lstat, opendir, readFile, realpath } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { isBoxedPrimitive, isProxy } from "node:util/types";
 import { parse } from "smol-toml";
 
 export type Json =
@@ -49,19 +50,30 @@ export interface Project {
 
 export interface ReadProjectOptions {
   dir?: string | URL;
-  validate?: (content: JsonObject, locale: string) => void;
+  validate?: (content: JsonObject, locale: string) => void | Promise<void>;
 }
 
 const MAX_CONFIG_BYTES = 256 * 1024;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 25 * 1024 * 1024;
+const MAX_GENERATED_BYTES = 50 * 1024 * 1024;
+const MAX_JSON_DEPTH = 64;
+const MAX_JSON_ENTRIES = 1_000_000;
 const MAX_LOCALES = 256;
 const BLOCKED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const WINDOWS_DEVICE_NAME =
+  /^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i;
+const CONTROL_OR_FORMAT = /[\p{Cc}\p{Cf}]/u;
 
 function fail(message: string): never { throw new Error(message); }
 
 function object(value: unknown, path: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    ![Object.prototype, null].includes(Object.getPrototypeOf(value))
+  ) {
     fail(`${path} must be an object`);
   }
   return value as Record<string, unknown>;
@@ -77,13 +89,17 @@ function allowedKeys(
   }
 }
 
+function validString(value: unknown): value is string {
+  return typeof value === "string" && Boolean(value.trim()) && value.isWellFormed();
+}
+
 function requiredString(
   value: Record<string, unknown>,
   key: string,
   path: string,
 ) {
   const result = value[key];
-  if (typeof result !== "string" || !result.trim()) {
+  if (!validString(result)) {
     fail(`${path}.${key} must be a non-empty string`);
   }
   return result;
@@ -96,7 +112,7 @@ function optionalString(
 ) {
   const result = value[key];
   if (result === undefined) return undefined;
-  if (typeof result !== "string" || !result.trim()) {
+  if (!validString(result)) {
     fail(`${path}.${key} must be a non-empty string`);
   }
   return result;
@@ -122,7 +138,7 @@ function stringList(
   if (result === undefined) return [];
   if (
     !Array.isArray(result) ||
-    result.some((item) => typeof item !== "string" || !item.trim())
+    result.some((item) => !validString(item))
   ) {
     fail(`${path}.${key} must be an array of non-empty strings`);
   }
@@ -131,12 +147,22 @@ function stringList(
 
 function safeDirectory(value: string, path: string) {
   const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
+  const parts = normalized.split("/");
   if (
-    isAbsolute(value) ||
-    value.includes("\0") ||
-    value.split(/[\\/]/).includes("..") ||
+    isAbsolute(normalized) ||
     !normalized ||
-    normalized === "."
+    Buffer.byteLength(normalized) > 512 ||
+    parts.length > 32 ||
+    parts.some(
+      (part) =>
+        !part ||
+        Buffer.byteLength(part) > 255 ||
+        part === "." ||
+        part === ".." ||
+        CONTROL_OR_FORMAT.test(part) ||
+        /[<>:"|?*]|^ |[ .]$/.test(part) ||
+        WINDOWS_DEVICE_NAME.test(part),
+    )
   ) {
     fail(`${path} must be a subdirectory inside the project`);
   }
@@ -144,7 +170,13 @@ function safeDirectory(value: string, path: string) {
 }
 
 function safeLocale(value: string) {
-  if (!/^[A-Za-z0-9-]+$/.test(value)) fail(`unsafe locale name: ${value}`);
+  if (
+    Buffer.byteLength(`${value}.json`) > 255 ||
+    !/^[A-Za-z0-9-]+$/.test(value) ||
+    WINDOWS_DEVICE_NAME.test(value)
+  ) {
+    fail("unsafe locale name");
+  }
   let canonical: string;
   try {
     canonical = Intl.getCanonicalLocales(value)[0] ?? "";
@@ -155,28 +187,57 @@ function safeLocale(value: string) {
   return value;
 }
 
-function safePath(value: string, path: string) {
+function decodeUrl(value: string, path: string) {
+  try {
+    return decodeURI(value);
+  } catch {
+    fail(`${path} must contain valid URL encoding`);
+  }
+}
+
+function safePagePath(value: string, path: string) {
   if (
     !value.startsWith("/") ||
     value.startsWith("//") ||
-    value.includes("\\") ||
-    value.includes("?") ||
-    value.includes("#") ||
-    value.split("/").includes("..") ||
-    /[\u0000-\u001f\u007f]/.test(value)
+    /[\s"#<>?[\]\\^`{|}]/u.test(value) ||
+    value.split("/").some((part) => part === "." || part === "..") ||
+    CONTROL_OR_FORMAT.test(value)
   ) {
     fail(`${path} must be a safe root-relative URL path`);
+  }
+  const decoded = decodeUrl(value, path);
+  if (CONTROL_OR_FORMAT.test(decoded)) {
+    fail(`${path} must be a safe root-relative URL path`);
+  }
+  for (const match of value.matchAll(/%[0-9A-Fa-f]{2}/g)) {
+    const escape = match[0];
+    const character = String.fromCharCode(Number.parseInt(escape.slice(1), 16));
+    if (
+      escape !== escape.toUpperCase() ||
+      /[A-Za-z0-9._~-]/.test(character) ||
+      character === "/" ||
+      character === "\\"
+    ) {
+      fail(`${path} must use canonical URL encoding`);
+    }
   }
   return value;
 }
 
-function safeAgent(value: string, path: string) {
-  if (!/^[A-Za-z0-9_-]+$/.test(value))
-    fail(`${path} contains an invalid crawler token: ${value}`);
+function safeRobotPath(value: string, path: string) {
+  if (
+    !value.startsWith("/") ||
+    /[\u0000-\u0020\u007f#]/.test(value) ||
+    !value.isWellFormed()
+  ) {
+    fail(`${path} must be a valid robots path pattern`);
+  }
+  decodeUrl(value, path);
   return value;
 }
 
 function safeUrl(value: string, path: string, base?: string) {
+  if (CONTROL_OR_FORMAT.test(value)) fail(`${path} contains unsafe URL controls`);
   let url: URL;
   try {
     url = base ? new URL(value, base) : new URL(value);
@@ -185,6 +246,8 @@ function safeUrl(value: string, path: string, base?: string) {
   }
   if (url.protocol !== "https:") fail(`${path} must use HTTPS`);
   if (url.username || url.password) fail(`${path} must not contain credentials`);
+  const decoded = decodeUrl(url.href, path);
+  if (CONTROL_OR_FORMAT.test(decoded)) fail(`${path} contains unsafe URL controls`);
   return url.href;
 }
 
@@ -223,32 +286,40 @@ function parseConfig(source: string): SeerConfig {
   const site = object(raw.site, "config.site");
   allowedKeys(site, ["name", "url"], "config.site");
   const siteUrl = safeUrl(requiredString(site, "url", "config.site"), "site.url");
-  const origin = new URL(siteUrl);
-  if (origin.href !== `${origin.origin}/`) {
-    fail("config.site.url must be an HTTPS origin without credentials, path, query, or fragment");
+  const base = new URL(siteUrl);
+  safePagePath(base.pathname, "config.site.url");
+  if (base.search || base.hash || !base.pathname.endsWith("/")) {
+    fail("config.site.url must be an HTTPS base URL ending in / without credentials, query, or fragment");
   }
 
-  const output = raw.output
-    ? object(raw.output, "config.output")
-    : Object.create(null);
+  const output = raw.output === undefined
+    ? Object.create(null)
+    : object(raw.output, "config.output");
   allowedKeys(output, ["public_dir"], "config.output");
 
-  const robots = raw.robots
-    ? object(raw.robots, "config.robots")
-    : Object.create(null);
+  const robots = raw.robots === undefined
+    ? Object.create(null)
+    : object(raw.robots, "config.robots");
   allowedKeys(
     robots,
     ["disallow", "block_agents"],
     "config.robots",
   );
   const disallow = stringList(robots, "disallow", "config.robots").map(
-    (path) => safePath(path, "config.robots.disallow"),
+    (path) => safeRobotPath(path, "config.robots.disallow"),
   );
-  const blockAgents = stringList(
-    robots,
-    "block_agents",
-    "config.robots",
-  ).map((agent) => safeAgent(agent, "config.robots.block_agents"));
+  const blockAgents: string[] = [];
+  const seenAgents = new Set<string>();
+  for (const value of stringList(robots, "block_agents", "config.robots")) {
+    if (!/^[A-Za-z_-]+$/.test(value)) {
+      fail("config.robots.block_agents contains an invalid crawler token");
+    }
+    const key = value.toLowerCase();
+    if (!seenAgents.has(key)) {
+      seenAgents.add(key);
+      blockAgents.push(value);
+    }
+  }
 
   return {
     defaultLocale,
@@ -262,29 +333,122 @@ function parseConfig(source: string): SeerConfig {
         "config.output.public_dir",
       ),
     },
-    robots: { disallow, blockAgents },
+    robots: {
+      disallow: [...new Set(disallow)],
+      blockAgents,
+    },
   };
 }
 
-function assertJson(value: unknown, path: string, depth = 0): asserts value is Json {
-  if (depth > 64) fail(`${path} exceeds the maximum depth of 64`);
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "boolean"
-  ) {
+function hasToJsonHook(value: object) {
+  let descriptor = Object.getOwnPropertyDescriptor(value, "toJSON");
+  if (descriptor) {
+    return !("value" in descriptor) || typeof descriptor.value === "function";
+  }
+  const prototype = Object.getPrototypeOf(value);
+  descriptor = Object.getOwnPropertyDescriptor(prototype, "toJSON");
+  if (!descriptor && prototype !== Object.prototype) {
+    descriptor = Object.getOwnPropertyDescriptor(Object.prototype, "toJSON");
+  }
+  return Boolean(
+    descriptor && (!("value" in descriptor) || typeof descriptor.value === "function"),
+  );
+}
+
+function assertJson(
+  value: unknown,
+  path: string,
+  depth = 0,
+  ancestors = new WeakSet<object>(),
+  budget = { remaining: MAX_JSON_ENTRIES },
+): asserts value is Json {
+  if (depth > MAX_JSON_DEPTH) {
+    fail(`${path} exceeds the maximum depth of ${MAX_JSON_DEPTH}`);
+  }
+  if (value === null || typeof value === "boolean") {
     return;
   }
-  if (typeof value === "number") return;
+  if (typeof value === "string") {
+    if (!value.isWellFormed()) fail(`${path} contains invalid Unicode`);
+    return;
+  }
+  if (typeof value === "number") {
+    if (
+      !Number.isFinite(value) ||
+      Object.is(value, -0) ||
+      (Number.isInteger(value) && !Number.isSafeInteger(value))
+    ) {
+      fail(`${path} contains a number that JSON cannot preserve`);
+    }
+    return;
+  }
+  if (isProxy(value)) fail(`${path} contains a proxy`);
+  if (isBoxedPrimitive(value)) fail(`${path} contains a boxed primitive`);
   if (Array.isArray(value)) {
-    value.forEach((item, index) => assertJson(item, `${path}[${index}]`, depth + 1));
+    if (
+      Object.getPrototypeOf(value) !== Array.prototype ||
+      Object.getPrototypeOf(Array.prototype) !== Object.prototype
+    ) {
+      fail(`${path} has an invalid array structure`);
+    }
+    if (hasToJsonHook(value)) fail(`${path} contains a toJSON hook`);
+    if (value.length > budget.remaining) {
+      fail(`${path} exceeds ${MAX_JSON_ENTRIES} JSON entries`);
+    }
+    budget.remaining -= value.length;
+    if (ancestors.has(value)) fail(`${path} contains a circular reference`);
+    ancestors.add(value);
+    for (let index = 0; index < value.length; index += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, index);
+      if (!descriptor || !("value" in descriptor)) {
+        fail(`${path} has an invalid array structure`);
+      }
+      assertJson(
+        descriptor.value,
+        `${path}[${index}]`,
+        depth + 1,
+        ancestors,
+        budget,
+      );
+    }
+    ancestors.delete(value);
     return;
   }
   if (!value || typeof value !== "object") fail(`${path} is not valid JSON`);
-  for (const [key, item] of Object.entries(value)) {
-    if (BLOCKED_KEYS.has(key)) fail(`${path}.${key} is forbidden`);
-    assertJson(item, `${path}.${key}`, depth + 1);
+  if (Object.getPrototypeOf(value) !== Object.prototype) {
+    fail(`${path} has an invalid object prototype`);
   }
+  if (hasToJsonHook(value)) fail(`${path} contains a toJSON hook`);
+  if (ancestors.has(value)) fail(`${path} contains a circular reference`);
+  ancestors.add(value);
+  for (const key in value) {
+    if (!Object.hasOwn(value, key)) continue;
+    if (budget.remaining === 0) {
+      fail(`${path} exceeds ${MAX_JSON_ENTRIES} JSON entries`);
+    }
+    budget.remaining -= 1;
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)!;
+    if (!("value" in descriptor)) {
+      fail(`${path} has an invalid object structure`);
+    }
+    if (!key.isWellFormed() || CONTROL_OR_FORMAT.test(key)) {
+      fail(`${path} contains an invalid JSON key`);
+    }
+    if (BLOCKED_KEYS.has(key)) fail(`${path}.${key} is forbidden`);
+    assertJson(
+      descriptor.value,
+      `${path}.${key}`,
+      depth + 1,
+      ancestors,
+      budget,
+    );
+  }
+  ancestors.delete(value);
+}
+
+function validatedSource(value: unknown, path: string) {
+  assertJson(value, path);
+  return JSON.stringify(value);
 }
 
 function merge(shared: Json, localized: Json): Json {
@@ -297,8 +461,12 @@ function merge(shared: Json, localized: Json): Json {
     !Array.isArray(localized)
   ) {
     const result: JsonObject = { ...shared };
-    for (const [key, value] of Object.entries(localized)) {
-      result[key] = key in shared ? merge(shared[key] as Json, value) : value;
+    for (const key in localized) {
+      if (!Object.hasOwn(localized, key)) continue;
+      const value = localized[key]!;
+      result[key] = Object.hasOwn(shared, key)
+        ? merge(shared[key] as Json, value)
+        : value;
     }
     return result;
   }
@@ -327,35 +495,73 @@ function compareShape(reference: Json, candidate: Json, path: string, locale: st
     return;
   }
   if (type !== "object") return;
-  const expected = Object.keys(reference as JsonObject).sort();
-  const actual = Object.keys(candidate as JsonObject).sort();
-  if (expected.join("\0") !== actual.join("\0")) {
-    fail(`${locale}.json differs at ${path}`);
-  }
-  for (const key of expected) {
+  const expected = reference as JsonObject;
+  const actual = candidate as JsonObject;
+  let expectedCount = 0;
+  for (const key in expected) {
+    if (!Object.hasOwn(expected, key)) continue;
+    expectedCount += 1;
+    if (!Object.hasOwn(actual, key)) fail(`${locale}.json differs at ${path}`);
     compareShape(
-      (reference as JsonObject)[key]!,
-      (candidate as JsonObject)[key]!,
+      expected[key]!,
+      actual[key]!,
       `${path}.${key}`,
       locale,
     );
   }
+  let actualCount = 0;
+  for (const key in actual) {
+    if (Object.hasOwn(actual, key)) actualCount += 1;
+  }
+  if (expectedCount !== actualCount) fail(`${locale}.json differs at ${path}`);
 }
 
 async function textFile(path: string, limit: number) {
   const status = await lstat(path);
-  if (!status.isFile() || status.isSymbolicLink()) {
+  if (!status.isFile()) {
     fail(`${path} must be a regular file`);
   }
+  if ((await realpath(path)).normalize("NFC") !== path.normalize("NFC"))
+    fail(`${path} must use its canonical filename`);
   if (status.size > limit) fail(`${path} exceeds its byte limit`);
-  const source = await readFile(path, "utf8");
-  const bytes = Buffer.byteLength(source);
+  const data = await readFile(path);
+  const bytes = data.byteLength;
   if (bytes > limit) fail(`${path} exceeds its byte limit`);
+  let source: string;
+  try {
+    source = new TextDecoder("utf-8", { fatal: true }).decode(data);
+  } catch {
+    fail(`${path} must be valid UTF-8`);
+  }
   return { source, bytes };
+}
+
+function assertJsonSourceDepth(source: string, path: string) {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source.charCodeAt(index);
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === 0x5c) escaped = true;
+      else if (character === 0x22) inString = false;
+    } else if (character === 0x22) {
+      inString = true;
+    } else if (character === 0x5b || character === 0x7b) {
+      depth += 1;
+      if (depth > MAX_JSON_DEPTH + 1) {
+        fail(`${path} exceeds the maximum depth of ${MAX_JSON_DEPTH}`);
+      }
+    } else if (character === 0x5d || character === 0x7d) {
+      depth -= 1;
+    }
+  }
 }
 
 async function jsonFile(path: string) {
   const { source, bytes } = await textFile(path, MAX_FILE_BYTES);
+  assertJsonSourceDepth(source, path);
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -374,9 +580,10 @@ function pagesFor(
   const seo = object(content.seo, `${locale}.seo`);
   const pages = object(seo.pages, `${locale}.seo.pages`);
   const result: Record<string, PageSeo> = {};
-  const seenPaths = new Set<string>();
 
-  for (const [id, value] of Object.entries(pages)) {
+  for (const id in pages) {
+    if (!Object.hasOwn(pages, id)) continue;
+    const value = pages[id];
     if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(id)) fail(`unsafe page id: ${id}`);
     const page = object(value, `${locale}.seo.pages.${id}`);
     allowedKeys(
@@ -392,13 +599,10 @@ function pagesFor(
       `${locale}.seo.pages.${id}`,
     );
 
-    const pagePath = safePath(
+    const pagePath = safePagePath(
       requiredString(page, "path", `${locale}.seo.pages.${id}`),
       `${locale}.seo.pages.${id}.path`,
     );
-    if (seenPaths.has(pagePath)) fail(`${locale} has duplicate path: ${pagePath}`);
-    seenPaths.add(pagePath);
-
     const title = requiredString(page, "title", `${locale}.seo.pages.${id}`);
     const description = requiredString(
       page,
@@ -434,10 +638,12 @@ function pagesFor(
 export async function readProject(
   options: ReadProjectOptions = {},
 ): Promise<Project> {
-  const requestedContentDir =
-    options.dir instanceof URL
-      ? fileURLToPath(options.dir)
-      : resolve(options.dir ?? "content");
+  const requestedContentDir = resolve(
+    options.dir instanceof URL ? fileURLToPath(options.dir) : options.dir ?? "content",
+  );
+  if (!(await lstat(requestedContentDir)).isDirectory()) {
+    fail(`${requestedContentDir} must be a real directory`);
+  }
   const contentDir = await realpath(requestedContentDir);
   const root = dirname(contentDir);
   const configSource = await textFile(
@@ -454,18 +660,21 @@ export async function readProject(
   ) {
     fail("input and output directories must not overlap");
   }
-  const entries = await readdir(contentDir, { withFileTypes: true });
-  const locales = entries
-    .filter(
-      (entry) =>
-        entry.isFile() &&
-        entry.name.endsWith(".json") &&
-        entry.name !== "shared.json",
-    )
-    .map((entry) => safeLocale(entry.name.slice(0, -5)))
-    .sort();
+  const locales: string[] = [];
+  for await (const entry of await opendir(contentDir)) {
+    if (!entry.name.endsWith(".json")) continue;
+    if (!entry.isFile()) {
+      fail(`${resolve(contentDir, entry.name)} must be a regular file`);
+    }
+    if (entry.name !== "shared.json") {
+      locales.push(safeLocale(entry.name.slice(0, -5)));
+      if (locales.length > MAX_LOCALES) {
+        fail(`content exceeds ${MAX_LOCALES} locales`);
+      }
+    }
+  }
+  locales.sort();
   if (locales.length === 0) fail("content must contain at least one locale JSON file");
-  if (locales.length > MAX_LOCALES) fail(`content exceeds ${MAX_LOCALES} locales`);
   if (!locales.includes(config.defaultLocale)) {
     fail(`missing default locale file: ${config.defaultLocale}.json`);
   }
@@ -484,16 +693,32 @@ export async function readProject(
   const shared = sharedFile.value;
   const reference = localized[config.defaultLocale]!;
   for (const locale of locales) {
+    if (locale === config.defaultLocale) continue;
     compareShape(reference, localized[locale]!, "$", locale);
   }
 
-  const content = Object.fromEntries(
-    locales.map((locale) => {
-      const value = merge(shared, localized[locale]!) as JsonObject;
-      options.validate?.(value, locale);
-      return [locale, value];
-    }),
-  ) as Record<string, JsonObject>;
+  const content: Record<string, JsonObject> = {};
+  let generatedBytes = 0;
+  for (const locale of locales) {
+    const value = structuredClone(
+      merge(shared, localized[locale]!),
+    ) as JsonObject;
+    await options.validate?.(value, locale);
+    const path = `${locale}.validated`;
+    const source = validatedSource(value, path);
+    generatedBytes += Buffer.byteLength(source) + 1;
+    if (generatedBytes > MAX_GENERATED_BYTES) {
+      fail("generated content exceeds the 50 MiB limit");
+    }
+    const validated = JSON.parse(source) as JsonObject;
+    assertJson(validated, path);
+    content[locale] = validated;
+  }
+  const validatedReference = content[config.defaultLocale]!;
+  for (const locale of locales) {
+    if (locale === config.defaultLocale) continue;
+    compareShape(validatedReference, content[locale]!, "$", locale);
+  }
   const pages = Object.fromEntries(
     locales.map((locale) => [
       locale,
@@ -501,22 +726,22 @@ export async function readProject(
     ]),
   ) as Record<string, Record<string, PageSeo>>;
 
-  const pageIds = Object.keys(pages[config.defaultLocale] ?? {}).sort();
+  const defaultPages = pages[config.defaultLocale]!;
   const seenUrls = new Set<string>();
   for (const locale of locales) {
-    const ids = Object.keys(pages[locale] ?? {}).sort();
-    if (ids.join("\0") !== pageIds.join("\0")) {
-      fail(`${locale} does not define the same page IDs as the default locale`);
-    }
-    for (const page of Object.values(pages[locale]!)) {
-      const url = new URL(page.path, config.site.url).href;
+    const localizedPages = pages[locale]!;
+    for (const pageId in localizedPages) {
+      if (!Object.hasOwn(localizedPages, pageId)) continue;
+      const page = localizedPages[pageId]!;
+      const url = new URL(`.${page.path}`, config.site.url).href;
       if (seenUrls.has(url)) fail(`duplicate canonical URL: ${url}`);
       seenUrls.add(url);
     }
-    for (const pageId of pageIds) {
+    for (const pageId in defaultPages) {
+      if (!Object.hasOwn(defaultPages, pageId)) continue;
       if (
-        pages[locale]![pageId]!.noindex !==
-        pages[config.defaultLocale]![pageId]!.noindex
+        localizedPages[pageId]!.noindex !==
+        defaultPages[pageId]!.noindex
       ) {
         fail(`${pageId}.noindex must match across locales`);
       }
