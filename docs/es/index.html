@@ -4,56 +4,96 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
-    <title>Contenido localizado sin maquinaria en ejecución</title>
-    <meta name="description" content="Seer compila localización JSON estricta y metadatos de búsqueda antes del despliegue.">
+    <meta name="theme-color" content="#f4f0e6">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>Seer — SEO y localización en una sola compilación</title>
+    <meta name="description" content="Seer valida la estructura del JSON localizado y genera URL canónicas, hreflang, JSON-LD, robots.txt, sitemaps y contenido independiente del framework antes del despliegue.">
     <link rel="canonical" href="https://keys-i.github.io/seer/es/">
     <link rel="alternate" hreflang="en" href="https://keys-i.github.io/seer/">
     <link rel="alternate" hreflang="es" href="https://keys-i.github.io/seer/es/">
+    <link rel="alternate" hreflang="ja" href="https://keys-i.github.io/seer/ja/">
+    <link rel="alternate" hreflang="ko" href="https://keys-i.github.io/seer/ko/">
+    <link rel="alternate" hreflang="zh-Hans" href="https://keys-i.github.io/seer/zh-hans/">
     <link rel="alternate" hreflang="x-default" href="https://keys-i.github.io/seer/">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Seer Example">
-    <meta property="og:title" content="Contenido localizado sin maquinaria en ejecución">
-    <meta property="og:description" content="Seer compila localización JSON estricta y metadatos de búsqueda antes del despliegue.">
+    <meta property="og:site_name" content="Seer">
+    <meta property="og:title" content="Seer — SEO y localización en una sola compilación">
+    <meta property="og:description" content="Seer valida la estructura del JSON localizado y genera URL canónicas, hreflang, JSON-LD, robots.txt, sitemaps y contenido independiente del framework antes del despliegue.">
     <meta property="og:url" content="https://keys-i.github.io/seer/es/">
     <meta name="twitter:card" content="summary">
-    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://keys-i.github.io/seer/#website","url":"https://keys-i.github.io/seer/","name":"Seer Example","inLanguage":["en","es"]},{"@type":"WebPage","@id":"https://keys-i.github.io/seer/es/#webpage","url":"https://keys-i.github.io/seer/es/","name":"Contenido localizado sin maquinaria en ejecución","description":"Seer compila localización JSON estricta y metadatos de búsqueda antes del despliegue.","inLanguage":"es","isPartOf":{"@id":"https://keys-i.github.io/seer/#website"}}]}</script>
-    <style>
-      :root { color-scheme: dark; font: 16px/1.6 system-ui, sans-serif; background: #07110d; color: #dff7e8; }
-      * { box-sizing: border-box; }
-      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 70% 0, #174f35 0, transparent 35rem), #07110d; }
-      header, main, footer { width: min(70rem, calc(100% - 2rem)); margin: auto; }
-      header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 0; }
-      nav { display: flex; flex-wrap: wrap; gap: .5rem; }
-      a { color: #8ff0b6; text-decoration-thickness: .08em; text-underline-offset: .2em; }
-      nav a { padding: .35rem .65rem; border: 1px solid #37684d; border-radius: 999px; text-decoration: none; }
-      [aria-current="page"] { color: #07110d; background: #8ff0b6; }
-      main { padding: clamp(4rem, 12vw, 9rem) 0; }
-      .eyebrow { color: #8ff0b6; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
-      h1 { max-width: 15ch; margin: .2em 0; font-size: clamp(2.6rem, 8vw, 6.5rem); line-height: .98; letter-spacing: -.05em; }
-      .summary { max-width: 48rem; font-size: clamp(1.1rem, 2vw, 1.45rem); color: #b7d5c2; }
-      .proof { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem; margin-top: 3rem; padding: 0; list-style: none; }
-      .proof li { padding: 1.25rem; border: 1px solid #37684d; border-radius: 1rem; background: #0c1c15cc; }
-      .proof strong { display: block; font-size: 1.5rem; }
-      footer { padding: 2rem 0; border-top: 1px solid #274936; color: #89aa96; }
-    </style>
+    <meta name="twitter:title" content="Seer — SEO y localización en una sola compilación">
+    <meta name="twitter:description" content="Seer valida la estructura del JSON localizado y genera URL canónicas, hreflang, JSON-LD, robots.txt, sitemaps y contenido independiente del framework antes del despliegue.">
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://keys-i.github.io/seer/#website","url":"https://keys-i.github.io/seer/","name":"Seer","inLanguage":["en","es","ja","ko","zh-Hans"]},{"@type":"WebPage","@id":"https://keys-i.github.io/seer/es/#webpage","url":"https://keys-i.github.io/seer/es/","name":"Seer — SEO y localización en una sola compilación","description":"Seer valida la estructura del JSON localizado y genera URL canónicas, hreflang, JSON-LD, robots.txt, sitemaps y contenido independiente del framework antes del despliegue.","inLanguage":"es","isPartOf":{"@id":"https://keys-i.github.io/seer/#website"}}]}</script>
+    <link rel="stylesheet" href="https://keys-i.github.io/seer/site.css">
   </head>
   <body>
-    <header>
-      <strong>Seer Example</strong>
-      <nav aria-label="Navegación principal"><a href="https://keys-i.github.io/seer/es/" aria-current="page">Inicio</a><a href="https://keys-i.github.io/seer/es/documentacion/">Documentación</a></nav>
-      <nav aria-label="Selección de idioma"><a href="https://keys-i.github.io/seer/" hreflang="en">EN</a><a href="https://keys-i.github.io/seer/es/" hreflang="es" aria-current="page">ES</a></nav>
+    <a class="skip" href="#content">Saltar al contenido</a>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="https://keys-i.github.io/seer/es/">Seer</a>
+        <nav aria-label="Navegación principal">
+          <a href="https://github.com/keys-i/seer#readme">Documentación</a>
+          <a href="https://github.com/keys-i/seer">GitHub</a>
+          <a href="https://www.npmjs.com/package/@keys-i/seer">npm</a>
+        </nav>
+        <details class="languages">
+          <summary>Selección de idioma: <span lang="es">español</span></summary>
+          <ul><li><a href="https://keys-i.github.io/seer/" lang="en" hreflang="en">English</a></li><li><a href="https://keys-i.github.io/seer/es/" lang="es" hreflang="es" aria-current="page">español</a></li><li><a href="https://keys-i.github.io/seer/ja/" lang="ja" hreflang="ja">日本語</a></li><li><a href="https://keys-i.github.io/seer/ko/" lang="ko" hreflang="ko">한국어</a></li><li><a href="https://keys-i.github.io/seer/zh-hans/" lang="zh-Hans" hreflang="zh-Hans">中文（简体）</a></li></ul>
+        </details>
+      </div>
     </header>
-    <main>
-      <p class="eyebrow">es · /es/</p>
-      <h1>Contenido legible para personas y buscadores</h1>
-      <p class="summary">Un archivo compartido, un JSON por idioma y ningún framework de traducción en el cliente.</p>
-      <ul class="proof" role="list">
-        <li><strong>2</strong> idiomas validados</li>
-        <li><strong>2</strong> páginas validadas</li>
-        <li><strong>0 KB</strong> localización en el navegador</li>
-      </ul>
+    <main id="content">
+      <section class="hero shell" aria-labelledby="hero-title">
+        <div>
+          <p class="eyebrow"><code>@keys-i/seer</code> · i18n y SEO en tiempo de compilación</p>
+          <h1 id="hero-title">SEO y localización: de 50 pasos manuales a una sola compilación.</h1>
+          <p class="lead">Escribe el JSON de cada idioma. Seer valida la estructura de cada archivo y genera el contenido y los archivos de búsqueda que necesita tu sitio estático o renderizado en servidor. No se envía ningún runtime de Seer al navegador.</p>
+          <p class="claim-note">La referencia a «50 pasos» representa diez comprobaciones repetidas en cinco idiomas; tu lista variará.</p>
+        </div>
+        <div class="quickstart" aria-labelledby="start-title">
+          <p class="code-label" id="start-title">Empieza con dos comandos</p>
+          <p>Instala Seer y ejecútalo antes de compilar tu sitio.</p>
+          <pre tabindex="0"><code>npm install --save-dev @keys-i/seer
+npx seer build</code></pre>
+        </div>
+      </section>
+      <section class="section shell" aria-labelledby="workflow-title">
+        <h2 id="workflow-title">Una compilación sustituye la lista de tareas</h2>
+        <ol class="steps">
+          <li><h3>Escribe el JSON localizado</h3><p>Guarda los datos compartidos una vez y el texto traducido en un archivo por idioma.</p></li>
+          <li><h3>Valida antes del despliegue</h3><p>Seer falla si faltan claves, hay rutas inseguras, metadatos incorrectos o estructuras inconsistentes entre idiomas.</p></li>
+          <li><h3>Publica páginas fáciles de descubrir</h3><p>Usa el JSON localizado y genera URL canónicas, hreflang, JSON-LD, robots.txt y sitemap.xml.</p></li>
+        </ol>
+      </section>
+      <section class="section split shell" aria-labelledby="api-title">
+        <div>
+          <h2 id="api-title">Usa tu framework, no el nuestro</h2>
+          <p>Carga el proyecto una vez al compilar o arrancar y pasa los metadatos independientes del framework a la API de cabecera nativa de tu framework.</p>
+        </div>
+        <pre tabindex="0"><code>import { headData, readProject } from &quot;@keys-i/seer&quot;;
+
+const project = await readProject();
+const metadata = headData(project, &quot;es&quot;, &quot;home&quot;);</code></pre>
+      </section>
+      <section class="section shell" aria-labelledby="proof-title">
+        <h2 id="proof-title">Generado aquí, no simulado</h2>
+        <dl class="facts">
+          <div><dt>5</dt><dd>archivos de idioma con estructura validada</dd></div>
+          <div><dt>0 KB</dt><dd>runtime de localización en el navegador</dd></div>
+        </dl>
+        <ul class="outputs">
+          <li><a href="https://keys-i.github.io/seer/content/es.json">JSON del idioma</a></li>
+          <li><a href="https://keys-i.github.io/seer/robots.txt">robots.txt</a></li>
+          <li><a href="https://keys-i.github.io/seer/sitemap.xml">sitemap.xml</a></li>
+        </ul>
+      </section>
+      <aside class="boundary shell" aria-labelledby="boundary-title">
+        <h2 id="boundary-title">Honesto por diseño</h2>
+        <p>Seer no traduce textos, no inventa esquemas, no promete posiciones ni añade un runtime de localización al navegador.</p>
+      </aside>
     </main>
-    <footer>Generado desde JSON validado por <a href="https://github.com/keys-i/seer">Seer</a>.</footer>
+    <footer class="site-footer">
+      <div class="shell">Generado desde JSON validado por <a href="https://github.com/keys-i/seer">Seer</a> · MIT</div>
+    </footer>
   </body>
 </html>

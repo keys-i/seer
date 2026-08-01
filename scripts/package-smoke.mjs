@@ -49,12 +49,13 @@ try {
     ],
     { cwd: root },
   );
-  await exec(
+  const imported = await exec(
     process.execPath,
     [
       "--input-type=module",
       "--eval",
-      'import { readProject } from "@keys-i/seer"; if (typeof readProject !== "function") process.exit(1)',
+      'import { readProject } from "@keys-i/seer"; const project = await readProject({ dir: process.argv[1] }); const pages = Object.keys(project.pages[project.config.defaultLocale]).length; console.log("Seer check: " + project.locales.length + " locales, " + pages + " pages.")',
+      resolve(repository, "content"),
     ],
     { cwd: root },
   );
@@ -72,7 +73,7 @@ try {
     ],
     { cwd: root },
   );
-  assert.match(checked.stdout, /Seer check: 2 locales, 2 pages/);
+  assert.equal(checked.stdout, imported.stdout);
   console.log("packed import and installed CLI passed");
 } finally {
   await rm(root, { recursive: true, force: true });

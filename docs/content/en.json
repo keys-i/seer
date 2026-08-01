@@ -1,35 +1,45 @@
 {
-  "brand": {
-    "name": "Seer"
-  },
   "seo": {
     "pages": {
       "home": {
         "path": "/",
-        "title": "Localized content without runtime machinery",
-        "description": "Seer compiles strict JSON localization and search metadata before deployment."
-      },
-      "docs": {
-        "path": "/docs/",
-        "title": "Seer documentation",
-        "description": "Configure content once, validate every locale, and consume generated JSON in any static or server-rendered website."
+        "title": "Seer — SEO and localisation in one build",
+        "description": "Seer validates locale JSON structure and generates canonical URLs, hreflang, JSON-LD, robots.txt, sitemaps, and framework-neutral content before deploy."
       }
     }
   },
-  "navigation": {
-    "home": "Home",
-    "docs": "Documentation"
-  },
   "home": {
-    "heading": "Content humans and search engines can read",
-    "summary": "One shared file, one JSON file per locale, no client-side translation framework."
+    "kicker": "Build-time i18n + SEO",
+    "heading": "SEO and localisation—from 50 manual steps to one build.",
+    "summary": "Author locale JSON. Seer validates every locale file's structure and generates the content and search files your static or server-rendered site needs. No Seer runtime ships to the browser.",
+    "claim_note": "The 50-step shorthand models ten repeated checks across five locales; your checklist will vary.",
+    "start_title": "Start with two commands",
+    "start_copy": "Install Seer, then run it before your site build.",
+    "workflow_title": "One build replaces the checklist",
+    "author_title": "Author locale JSON",
+    "author_copy": "Store shared data once and translated copy in one file per locale.",
+    "validate_title": "Validate before deploy",
+    "validate_copy": "Seer fails on missing keys, unsafe paths, malformed metadata, and inconsistent locale structure.",
+    "ship_title": "Ship discoverable pages",
+    "ship_copy": "Consume locale JSON and emit canonical URLs, hreflang, JSON-LD, robots.txt, and sitemap.xml.",
+    "api_title": "Use your framework, not ours",
+    "api_copy": "Load the project once at build or start time, then map neutral metadata through your framework's native head API.",
+    "proof_title": "Generated here, not mocked",
+    "boundary_title": "Honest by design",
+    "boundary_copy": "Seer does not translate copy, invent schema, promise rankings, or add a browser localisation runtime."
   },
   "demo": {
+    "skip_to_content": "Skip to content",
     "primary_navigation": "Primary navigation",
     "language_navigation": "Language selection",
-    "validated_locales": "validated locales",
-    "validated_pages": "validated pages",
-    "browser_runtime": "browser localization runtime",
+    "documentation": "Documentation",
+    "repository": "GitHub",
+    "registry": "npm",
+    "validated_locales": "locale files with validated structure",
+    "browser_runtime": "browser localisation runtime",
+    "generated_locale": "Locale JSON",
+    "robots": "robots.txt",
+    "sitemap": "sitemap.xml",
     "generated_by": "Generated from validated JSON by"
   }
 }

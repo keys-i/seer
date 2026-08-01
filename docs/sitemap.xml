@@ -4,12 +4,15 @@
     <loc>https://keys-i.github.io/seer/</loc>
   </url>
   <url>
-    <loc>https://keys-i.github.io/seer/docs/</loc>
-  </url>
-  <url>
     <loc>https://keys-i.github.io/seer/es/</loc>
   </url>
   <url>
-    <loc>https://keys-i.github.io/seer/es/documentacion/</loc>
+    <loc>https://keys-i.github.io/seer/ja/</loc>
+  </url>
+  <url>
+    <loc>https://keys-i.github.io/seer/ko/</loc>
+  </url>
+  <url>
+    <loc>https://keys-i.github.io/seer/zh-hans/</loc>
   </url>
 </urlset>

@@ -2,7 +2,7 @@ version = 1
 default_locale = "en"
 
 [site]
-name = "Seer Example"
+name = "Seer"
 url = "https://keys-i.github.io/seer/"
 
 [output]
