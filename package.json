@@ -1,6 +1,6 @@
 {
   "name": "@keys-i/seer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Build-time localization, JSON content, SEO, and AI-search metadata for any website.",
   "type": "module",
   "license": "MIT",
