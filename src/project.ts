@@ -1,6 +1,7 @@
 import { lstat, opendir, readFile, realpath } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { isBoxedPrimitive, isProxy } from "node:util/types";
 import { parse } from "smol-toml";
 
 export type Json =
@@ -57,6 +58,7 @@ const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 25 * 1024 * 1024;
 const MAX_GENERATED_BYTES = 50 * 1024 * 1024;
 const MAX_JSON_DEPTH = 64;
+const MAX_JSON_ENTRIES = 1_000_000;
 const MAX_LOCALES = 256;
 const BLOCKED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 const WINDOWS_DEVICE_NAME =
@@ -338,11 +340,27 @@ function parseConfig(source: string): SeerConfig {
   };
 }
 
+function hasToJsonHook(value: object) {
+  let descriptor = Object.getOwnPropertyDescriptor(value, "toJSON");
+  if (descriptor) {
+    return !("value" in descriptor) || typeof descriptor.value === "function";
+  }
+  const prototype = Object.getPrototypeOf(value);
+  descriptor = Object.getOwnPropertyDescriptor(prototype, "toJSON");
+  if (!descriptor && prototype !== Object.prototype) {
+    descriptor = Object.getOwnPropertyDescriptor(Object.prototype, "toJSON");
+  }
+  return Boolean(
+    descriptor && (!("value" in descriptor) || typeof descriptor.value === "function"),
+  );
+}
+
 function assertJson(
   value: unknown,
   path: string,
   depth = 0,
   ancestors = new WeakSet<object>(),
+  budget = { remaining: MAX_JSON_ENTRIES },
 ): asserts value is Json {
   if (depth > MAX_JSON_DEPTH) {
     fail(`${path} exceeds the maximum depth of ${MAX_JSON_DEPTH}`);
@@ -364,15 +382,34 @@ function assertJson(
     }
     return;
   }
+  if (isProxy(value)) fail(`${path} contains a proxy`);
+  if (isBoxedPrimitive(value)) fail(`${path} contains a boxed primitive`);
   if (Array.isArray(value)) {
-    if (Object.getPrototypeOf(value) !== Array.prototype) {
+    if (
+      Object.getPrototypeOf(value) !== Array.prototype ||
+      Object.getPrototypeOf(Array.prototype) !== Object.prototype
+    ) {
       fail(`${path} has an invalid array structure`);
     }
+    if (hasToJsonHook(value)) fail(`${path} contains a toJSON hook`);
+    if (value.length > budget.remaining) {
+      fail(`${path} exceeds ${MAX_JSON_ENTRIES} JSON entries`);
+    }
+    budget.remaining -= value.length;
     if (ancestors.has(value)) fail(`${path} contains a circular reference`);
     ancestors.add(value);
     for (let index = 0; index < value.length; index += 1) {
-      if (!Object.hasOwn(value, index)) fail(`${path} has an invalid array structure`);
-      assertJson(value[index], `${path}[${index}]`, depth + 1, ancestors);
+      const descriptor = Object.getOwnPropertyDescriptor(value, index);
+      if (!descriptor || !("value" in descriptor)) {
+        fail(`${path} has an invalid array structure`);
+      }
+      assertJson(
+        descriptor.value,
+        `${path}[${index}]`,
+        depth + 1,
+        ancestors,
+        budget,
+      );
     }
     ancestors.delete(value);
     return;
@@ -381,27 +418,37 @@ function assertJson(
   if (Object.getPrototypeOf(value) !== Object.prototype) {
     fail(`${path} has an invalid object prototype`);
   }
+  if (hasToJsonHook(value)) fail(`${path} contains a toJSON hook`);
   if (ancestors.has(value)) fail(`${path} contains a circular reference`);
   ancestors.add(value);
   for (const key in value) {
     if (!Object.hasOwn(value, key)) continue;
+    if (budget.remaining === 0) {
+      fail(`${path} exceeds ${MAX_JSON_ENTRIES} JSON entries`);
+    }
+    budget.remaining -= 1;
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)!;
+    if (!("value" in descriptor)) {
+      fail(`${path} has an invalid object structure`);
+    }
     if (!key.isWellFormed() || CONTROL_OR_FORMAT.test(key)) {
       fail(`${path} contains an invalid JSON key`);
     }
     if (BLOCKED_KEYS.has(key)) fail(`${path}.${key} is forbidden`);
     assertJson(
-      (value as Record<string, unknown>)[key],
+      descriptor.value,
       `${path}.${key}`,
       depth + 1,
       ancestors,
+      budget,
     );
   }
   ancestors.delete(value);
 }
 
-function validatedBytes(value: unknown, path: string) {
+function validatedSource(value: unknown, path: string) {
   assertJson(value, path);
-  return Buffer.byteLength(JSON.stringify(value)) + 1;
+  return JSON.stringify(value);
 }
 
 function merge(shared: Json, localized: Json): Json {
@@ -657,19 +704,15 @@ export async function readProject(
       merge(shared, localized[locale]!),
     ) as JsonObject;
     await options.validate?.(value, locale);
-    generatedBytes += validatedBytes(value, `${locale}.validated`);
+    const path = `${locale}.validated`;
+    const source = validatedSource(value, path);
+    generatedBytes += Buffer.byteLength(source) + 1;
     if (generatedBytes > MAX_GENERATED_BYTES) {
       fail("generated content exceeds the 50 MiB limit");
     }
-    content[locale] = value;
-  }
-  generatedBytes = 0;
-  for (const locale of locales) {
-    const value = content[locale]!;
-    generatedBytes += validatedBytes(value, `${locale}.validated`);
-    if (generatedBytes > MAX_GENERATED_BYTES) {
-      fail("generated content exceeds the 50 MiB limit");
-    }
+    const validated = JSON.parse(source) as JsonObject;
+    assertJson(validated, path);
+    content[locale] = validated;
   }
   const validatedReference = content[config.defaultLocale]!;
   for (const locale of locales) {

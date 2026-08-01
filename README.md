@@ -226,7 +226,7 @@ describes the enforcement layer Seer deliberately does not fake.
 - maximum aggregate JSON size: 25 MiB and 256 locales;
 - maximum aggregate generated locale JSON: 50 MiB;
 - maximum TOML size: 256 KiB;
-- maximum JSON depth: 64;
+- maximum JSON depth: 64 and 1,000,000 container entries per document;
 - input must be valid UTF-8 and contain well-formed Unicode;
 - non-finite numbers and integers outside JavaScript's safe range rejected;
 - prototype-pollution keys rejected;
@@ -240,6 +240,9 @@ describes the enforcement layer Seer deliberately does not fake.
 - XML escaped and JSON-LD serialization protected against script termination;
 - no network access, remote includes, templates, `eval`, or per-request file
   reads.
+
+These rejection limits bound work but do not promise that maximum accepted
+content fits a 64 MiB heap; constrained-heap tests target amplification paths.
 
 Seer validates metadata. Your framework must still escape localized content
 when rendering HTML.

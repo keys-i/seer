@@ -637,6 +637,7 @@ test("validates post-callback page shape", async (context) => {
 });
 
 test("rejects validator corruption", async (context) => {
+  let coercions = 0;
   const cases: Array<{
     name: string;
     corrupt: (content: JsonObject) => void;
@@ -679,6 +680,70 @@ test("rejects validator corruption", async (context) => {
       error: /invalid array structure/,
     },
     {
+      name: "JSON entry limit",
+      corrupt: (content) => {
+        content.invalid = new Array<number>(1_000_001).fill(0);
+      },
+      error: /exceeds 1000000 JSON entries/,
+    },
+    {
+      name: "partitioned JSON entry limit",
+      corrupt: (content) => {
+        for (const key of Object.keys(content)) delete content[key];
+        content.values = new Array<number>(999_999).fill(0);
+        content.extra = 0;
+      },
+      error: /exceeds 1000000 JSON entries/,
+    },
+    {
+      name: "array accessor",
+      corrupt: (content) => {
+        const value = [1];
+        Object.defineProperty(value, 0, { enumerable: true, get: () => 1 });
+        content.invalid = value;
+      },
+      error: /invalid array structure/,
+    },
+    {
+      name: "accessor",
+      corrupt: (content) => {
+        Object.defineProperty(content, "invalid", {
+          enumerable: true,
+          get: () => "lost",
+        });
+      },
+      error: /invalid object structure/,
+    },
+    {
+      name: "proxy",
+      corrupt: (content) => {
+        content.invalid = new Proxy<JsonObject>({ value: "lost" }, {});
+      },
+      error: /contains a proxy/,
+    },
+    {
+      name: "own toJSON hook",
+      corrupt: (content) => {
+        Object.defineProperty(content, "toJSON", { value: () => ({}) });
+      },
+      error: /contains a toJSON hook/,
+    },
+    {
+      name: "boxed primitive",
+      corrupt: (content) => {
+        const value = new Number(1) as unknown as JsonObject;
+        Object.setPrototypeOf(value, Object.prototype);
+        Object.defineProperty(value, Symbol.toPrimitive, {
+          value() {
+            coercions += 1;
+            return 42;
+          },
+        });
+        content.invalid = value;
+      },
+      error: /contains a boxed primitive/,
+    },
+    {
       name: "excessive depth",
       corrupt: (content) => {
         let value: Json = 0;
@@ -686,6 +751,13 @@ test("rejects validator corruption", async (context) => {
         content.invalid = value;
       },
       error: /maximum depth of 64/,
+    },
+    {
+      name: "oversized value",
+      corrupt: (content) => {
+        content.invalid = "x".repeat(50 * 1024 * 1024);
+      },
+      error: /generated content exceeds the 50 MiB limit/,
     },
   ];
 
@@ -703,47 +775,138 @@ test("rejects validator corruption", async (context) => {
       );
     });
   }
+  assert.equal(coercions, 0);
 
-  const retainedCases: Array<{
-    name: string;
-    corrupt: (content: JsonObject) => void;
-    error: RegExp;
-  }> = [
-    {
-      name: "retained lone surrogate",
-      corrupt: (content) => { (content.home as JsonObject).heading = "\ud800"; },
-      error: /invalid Unicode/,
-    },
-    {
-      name: "retained non-finite number",
-      corrupt: (content) => { (content.home as JsonObject).heading = Infinity; },
-      error: /number that JSON cannot preserve/,
-    },
-    {
-      name: "retained oversized string",
-      corrupt: (content) => {
-        (content.home as JsonObject).heading = "x".repeat(50 * 1024 * 1024);
-      },
-      error: /generated content exceeds the 50 MiB limit/,
-    },
-  ];
-
-  for (const item of retainedCases) {
-    await context.test(item.name, async (nested) => {
-      const root = await fixture(nested);
-      let retained: JsonObject | undefined;
+  await context.test("inherited toJSON hook", async (nested) => {
+    const root = await fixture(nested);
+    const previous = Object.getOwnPropertyDescriptor(Object.prototype, "toJSON");
+    let hooks = 0;
+    try {
       await assert.rejects(
         readProject({
           dir: resolve(root, "content"),
-          validate(content, locale) {
-            if (locale === "en") retained = content;
-            else item.corrupt(retained!);
+          validate(_content, locale) {
+            if (locale !== "en") return;
+            Object.defineProperty(Object.prototype, "toJSON", {
+              configurable: true,
+              value() {
+                hooks += 1;
+                return { rewritten: true };
+              },
+            });
           },
         }),
-        item.error,
+        /contains a toJSON hook/,
       );
+      assert.equal(hooks, 0);
+    } finally {
+      if (previous) Object.defineProperty(Object.prototype, "toJSON", previous);
+      else delete (Object.prototype as { toJSON?: unknown }).toJSON;
+    }
+  });
+
+  await context.test("proxied object prototype", async (nested) => {
+    const root = await fixture(nested);
+    let traps = 0;
+    const prototype = new Proxy({}, {
+      has() {
+        traps += 1;
+        throw new Error("prototype trap executed");
+      },
+    });
+    await assert.rejects(
+      readProject({
+        dir: resolve(root, "content"),
+        validate(content, locale) {
+          if (locale === "en") Object.setPrototypeOf(content, prototype);
+        },
+      }),
+      /invalid object prototype/,
+    );
+    assert.equal(traps, 0);
+  });
+
+  const canonicalCases: Array<{
+    name: string;
+    mutate: (content: JsonObject) => void;
+    verify: (content: JsonObject) => void;
+  }> = [
+    {
+      name: "extra array property",
+      mutate(content) {
+        const value = [1] as Json[] & { extra?: string };
+        value.extra = "lost";
+        content.invalid = value;
+      },
+      verify(content) {
+        const value = content.invalid as Json[];
+        assert.deepEqual(value, [1]);
+        assert.equal(Object.hasOwn(value, "extra"), false);
+      },
+    },
+    {
+      name: "symbol key",
+      mutate(content) {
+        Object.defineProperty(content, Symbol("lost"), {
+          enumerable: true,
+          value: "lost",
+        });
+      },
+      verify(content) {
+        assert.deepEqual(Object.getOwnPropertySymbols(content), []);
+      },
+    },
+    {
+      name: "non-enumerable key",
+      mutate(content) {
+        Object.defineProperty(content, "invalid", { value: "lost" });
+      },
+      verify(content) {
+        assert.equal(Object.hasOwn(content, "invalid"), false);
+      },
+    },
+    {
+      name: "hidden internal slots",
+      mutate(content) {
+        const value = new Map([["hidden", 7]]) as unknown as JsonObject;
+        Object.setPrototypeOf(value, Object.prototype);
+        content.internal = value;
+      },
+      verify(content) {
+        const value = content.internal as JsonObject;
+        assert.deepEqual(value, {});
+        assert.throws(() => Map.prototype.get.call(value, "hidden"), TypeError);
+      },
+    },
+  ];
+
+  for (const item of canonicalCases) {
+    await context.test(item.name, async (nested) => {
+      const root = await fixture(nested);
+      const loaded = await readProject({
+        dir: resolve(root, "content"),
+        validate: item.mutate,
+      });
+      item.verify(loaded.content.en!);
     });
   }
+
+  await context.test("isolated validator references", async (nested) => {
+    const root = await fixture(nested);
+    let retained: JsonObject | undefined;
+    const loaded = await readProject({
+      dir: resolve(root, "content"),
+      validate(content, locale) {
+        if (locale === "en") retained = content;
+        else (retained!.home as JsonObject).heading = Infinity;
+      },
+    });
+    assert.notEqual(loaded.content.en, retained);
+    assert.equal(
+      (loaded.content.en!.home as JsonObject).heading,
+      "Content humans and search engines can read",
+    );
+  });
 
   await context.test("locale shape mutation", async (nested) => {
     const root = await fixture(nested);
@@ -1014,6 +1177,57 @@ test("enforces input resource limits", async (context) => {
         assert.match(failure.stderr ?? "", /maximum depth of 64/);
         return true;
       },
+    );
+  });
+
+  await context.test("wide validator array", async (nested) => {
+    const root = await fixture(nested);
+    const moduleUrl = pathToFileURL(resolve(repository, "dist/src/index.js")).href;
+    const script = `
+      import { readProject } from ${JSON.stringify(moduleUrl)};
+      await readProject({
+        dir: process.argv[1],
+        validate(content) { content.wide = Array(900_000).fill(0); },
+      });
+    `;
+    await exec(
+      process.execPath,
+      [
+        "--max-old-space-size=64",
+        "--input-type=module",
+        "--eval",
+        script,
+        resolve(root, "content"),
+      ],
+      { timeout: 10_000 },
+    );
+
+    const partitioned = `
+      import assert from "node:assert/strict";
+      import { readProject } from ${JSON.stringify(moduleUrl)};
+      await assert.rejects(
+        readProject({
+          dir: process.argv[1],
+          validate(content) {
+            content.wide = Array.from(
+              { length: 3 },
+              () => Array(400_000).fill(0),
+            );
+          },
+        }),
+        /exceeds 1000000 JSON entries/,
+      );
+    `;
+    await exec(
+      process.execPath,
+      [
+        "--max-old-space-size=64",
+        "--input-type=module",
+        "--eval",
+        partitioned,
+        resolve(root, "content"),
+      ],
+      { timeout: 10_000 },
     );
   });
 
