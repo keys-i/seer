@@ -12,6 +12,7 @@
   "bugs": {
     "url": "https://github.com/keys-i/seer/issues"
   },
+  "homepage": "https://keys-i.github.io/seer/",
   "keywords": [
     "i18n",
     "localization",
@@ -39,11 +40,12 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc",
-    "test": "npm run build && node --test dist/test/*.test.js",
-    "coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=90 dist/test/*.test.js",
+    "test": "npm run build && node --test dist/test/*.test.js test/*.test.mjs",
+    "coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=90 dist/test/*.test.js test/*.test.mjs",
     "benchmark": "npm run build && node dist/test/seer.bench.js",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs",
-    "ci": "npm run coverage && node dist/test/seer.bench.js && node scripts/package-smoke.mjs && npm audit",
+    "demo": "npm run build && node demo/build.mjs",
+    "ci": "npm run coverage && node dist/test/seer.bench.js && node scripts/package-smoke.mjs && node demo/build.mjs && node -e \"const{execFileSync}=require('node:child_process');const s=execFileSync('git',['status','--porcelain','--untracked-files=all','--ignored=matching','--','docs'],{encoding:'utf8'});if(s){console.error(s);process.exit(1)}\" && npm audit",
     "prepublishOnly": "npm run ci"
   },
   "dependencies": {

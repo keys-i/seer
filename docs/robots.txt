@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /seer/api/
+Disallow: /seer/admin/
+
+User-agent: GPTBot
+Disallow: /seer/
+
+User-agent: ClaudeBot
+Disallow: /seer/
+
+Sitemap: https://keys-i.github.io/seer/sitemap.xml

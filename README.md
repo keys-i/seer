@@ -3,6 +3,8 @@
 Build-time localization, JSON content, and search metadata for static and
 server-rendered websites.
 
+[Live static demo](https://keys-i.github.io/seer/) · [generated locale JSON](https://keys-i.github.io/seer/content/en.json)
+
 Seer reads one `content/shared.json`, one `content/<locale>.json` per language,
 and `content/config.toml`. It validates its schema before deployment, merges
 shared data with one locale at a time, and emits:
