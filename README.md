@@ -13,7 +13,7 @@ shared data with one locale at a time, and emits:
 - canonical, `hreflang`, Open Graph, Twitter, robots, and JSON-LD helpers;
 - `robots.txt` and `sitemap.xml`.
 
-One runtime dependency parses TOML. Seer ships no browser runtime, React
+Build dependencies parse TOML and HTML. Seer ships no browser runtime, React
 context, framework adapter, watcher, server, crawler, or rate limiter.
 
 ## Install
@@ -32,6 +32,84 @@ npm install --save-dev @keys-i/seer
 ```
 
 Seer is ESM-only and requires Node 24.18 or newer.
+
+## Localise an existing website
+
+Seer can process the HTML your existing site generator already builds. It
+writes the translated pages, language switcher, canonical URLs, reciprocal
+`hreflang`, structured metadata and sitemaps together. No translation runtime
+or framework adapter is added to the browser.
+
+Put this in `locales/config.toml`:
+
+```toml
+version = 1
+default_locale = "en"
+
+[site]
+name = "My notes"
+url = "https://example.com/"
+
+[output]
+public_dir = "public"
+
+[routing]
+strategy = "subdirectory"
+
+[localization]
+source_dir = ".seer-source"
+locales = ["en", "as", "bn", "brx", "doi", "gu", "hi", "kn", "kok", "ks", "mai", "ml", "mni", "mr", "ne", "or", "pa", "sa", "sat", "sd", "ta", "te", "ur"]
+exclude = ["/404.html", "/print_page/"]
+preserve = ["My notes", "Seer"]
+```
+
+Build your original site into `.seer-source`, then run:
+
+```sh
+seer localize --translate
+```
+
+`--translate` explicitly enables requests to Sarvam using `SARVAM_API_KEY`.
+The service may charge for these requests. The key is read from the environment
+and is never written into generated pages or catalogs. All 22 supported Indian
+languages use the same workflow and checks, with Odia's `or` locale mapped to
+the provider's `od-IN` code. No language requires a special certification or a
+particular reviewer to be included.
+
+For offline editing, `seer localize --extract` creates the catalogs and reports
+missing entries without calling a service. Fill their `translation` fields
+with your preferred translator or edit generated translations directly.
+`seer localize` then builds entirely offline. It fails before replacing the
+published site if any translation is missing, stale or fails validation.
+Rebuilds reuse unchanged translations, including your corrections. Keep the
+catalogs with your site sources.
+
+Sentences keep their inline emphasis and links. Code, formulas, URLs, numbers,
+`translate="no"` regions and configured terms are protected. Checks catch
+missing placeholders, unchanged source text and an unexpected output script;
+they are useful error checks, not a claim that meaning or fluency is certified.
+Provider request IDs are recorded for generated entries. Notes' existing
+Material interface labels and search index are localised without new browser
+JavaScript; search results link to each translated page.
+
+`subdirectory` emits `/en/guide/`, `/hi/guide/` and so on, including the source
+language. Existing source URLs remain available with canonical links to the
+source-language routes. Assets remain shared at the original site URL.
+Generated pages preserve their source URL base so responsive images and inline
+CSS keep resolving shared assets. Index-file and fragment links stay in the
+selected language, and existing HTML `base` elements are respected.
+`subdomain` instead emits `https://en.example.com/guide/` and
+`https://hi.example.com/guide/`, with a separate deploy directory, sitemap and
+robots file per locale. Serve each locale directory at its configured hostname
+and base path; DNS and TLS configuration belong to the hosting service. Keep
+the shared assets available at the original site URL.
+Excluded and `noindex` HTML pages are also copied into each subdomain's deploy
+directory without translation. Allow the shared asset origin in your content
+security policy and enable CORS there for fonts and module scripts when needed.
+
+The JSON-content workflow below remains available. With `[routing]` enabled,
+its page paths are language-neutral (`/guide/`); Seer adds the locale itself.
+Without `[routing]`, existing manually localised paths keep their behavior.
 
 ## Files
 
@@ -217,7 +295,7 @@ fast delivery.
 Seer therefore emits only evidence-backed metadata:
 
 - a localized title and description for every locale/page;
-- same-origin canonical URLs and reciprocal `hreflang`, including
+- canonical URLs for the configured locale routes and reciprocal `hreflang`, including
   `x-default`;
 - generic `WebSite` and `WebPage` JSON-LD;
 - indexable canonical URLs in the sitemap;
@@ -282,8 +360,8 @@ describes the enforcement layer Seer deliberately does not fake.
   the final content directory entry and input files cannot be symlinks, and
   existing output components cannot be symlinks or filesystem aliases;
 - XML escaped and JSON-LD serialization protected against script termination;
-- no network access, remote includes, templates, `eval`, or per-request file
-  reads.
+- no remote includes, templates, `eval`, or per-request file reads; network
+  translation occurs only with the explicit `localize --translate` option.
 
 These rejection limits bound work but do not promise that maximum accepted
 content fits a 64 MiB heap; constrained-heap tests target amplification paths.
@@ -291,11 +369,10 @@ content fits a 64 MiB heap; constrained-heap tests target amplification paths.
 Seer validates metadata. Your framework must still escape localized content
 when rendering HTML.
 
-## Deliberate omissions
+## Runtime scope
 
-No runtime translator, fallback locale, dotted-key `t()`, locale detection,
-React context, plugin system, framework adapters, client fetches, deep array
-merge, generated SEO mirror, crawler middleware, `crawl-delay`, IndexNow,
-`llms.txt`, keyword generator, AI-written copy, or in-memory rate limiter.
-
-Add a feature only after two real consumers need the same behavior.
+Seer works at build time. It does not add locale detection, a client-side
+translator or crawler middleware. Pages already rendered by JavaScript alone
+must first be statically rendered by the host. Arbitrary executable script
+strings are preserved; data-driven client applications can use the JSON
+content workflow.
