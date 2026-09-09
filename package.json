@@ -1,7 +1,7 @@
 {
   "name": "@keys-i/seer",
-  "version": "1.1.0",
-  "description": "Build-time localization, JSON content, SEO, and AI-search metadata for any website.",
+  "version": "1.2.0",
+  "description": "Build-time localization, JSON content, and SEO metadata for any website.",
   "type": "module",
   "license": "MIT",
   "author": "keys-i",
@@ -46,10 +46,12 @@
     "benchmark": "npm run build && node dist/test/seer.bench.js",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs",
     "demo": "npm run build && node demo/build.mjs",
-    "ci": "npm run coverage && node dist/test/seer.bench.js && node scripts/package-smoke.mjs && node demo/build.mjs && node -e \"const{execFileSync}=require('node:child_process');const s=execFileSync('git',['status','--porcelain','--untracked-files=all','--ignored=matching','--','docs','actions/locale.mjs'],{encoding:'utf8'});if(s){console.error(s);process.exit(1)}\" && npm audit",
-    "prepublishOnly": "npm run ci"
+    "ci": "npm run verify && node -e \"const{execFileSync}=require('node:child_process');const s=execFileSync('git',['status','--porcelain','--untracked-files=all','--ignored=matching','--','docs','actions/locale.mjs'],{encoding:'utf8'});if(s){console.error(s);process.exit(1)}\"",
+    "prepublishOnly": "npm run verify",
+    "verify": "npm run coverage && node dist/test/seer.bench.js && node scripts/package-smoke.mjs && node demo/build.mjs && npm audit"
   },
   "dependencies": {
+    "parse5": "8.0.0",
     "smol-toml": "1.7.1"
   },
   "devDependencies": {

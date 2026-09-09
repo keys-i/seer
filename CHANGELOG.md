@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.2.0 (2026-09-10)
+
+### Features
+
+* Localize existing static HTML through reusable offline catalogs or explicit
+  Sarvam translation across English and 22 Indian languages
+* Generate localized navigation, search, structured metadata and sitemaps with
+  subdirectory or subdomain routing
+
+### Fixes
+
+* Preserve asset URL bases, responsive images, inline CSS, index-file links and
+  fragment navigation when pages move to localized routes
+* Preserve excluded HTML in each subdomain deployment and honor case-insensitive
+  `noindex` directives
+* Reject reserved inline placeholder collisions, report malformed HTML language
+  tags and cancel oversized translation responses while streaming
+* Verify installed-package catalog extraction and offline localization before
+  publication
+
 ## [1.1.0](https://github.com/keys-i/seer/compare/v1.0.0...v1.1.0) (2026-08-01)
 
 
